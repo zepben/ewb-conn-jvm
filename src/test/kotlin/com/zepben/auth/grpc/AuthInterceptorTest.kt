@@ -1,28 +1,18 @@
 /*
  * Copyright 2020 Zeppelin Bend Pty Ltd
- * This file is part of Unknown.
  *
- * Unknown is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Unknown is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with Unknown.  If not, see <https://www.gnu.org/licenses/>.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
 package com.zepben.auth.grpc
 
 import com.zepben.auth.JWTAuthenticator
-import com.zepben.test.util.auth.MockJwksUrlProvider
-import com.zepben.test.util.auth.MockServerCall
-import com.zepben.test.util.auth.MockServerCallHandler
-import com.zepben.test.util.auth.TOKEN
+import com.zepben.testutils.auth.MockJwksUrlProvider
+import com.zepben.testutils.auth.MockServerCall
+import com.zepben.testutils.auth.MockServerCallHandler
+import com.zepben.testutils.auth.TOKEN
 import io.grpc.Metadata
 import io.grpc.Status
 import org.hamcrest.MatcherAssert.assertThat

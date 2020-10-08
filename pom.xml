@@ -5,14 +5,55 @@
 
     <parent>
         <groupId>com.zepben.maven</groupId>
-        <artifactId>ewb-super-pom</artifactId>
-        <version>1.5.1</version>
+        <artifactId>evolve-super-pom</artifactId>
+        <version>0.3.5</version>
     </parent>
 
     <groupId>com.zepben.evolve</groupId>
     <artifactId>evolve-conn</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
+    <name>${project.groupId}:${project.artifactId}</name>
+    <description>Super Pom for Evolve Maven projects. Used for version management within the evolve platform.</description>
+    <url>https://github.com/zepben/evolve-conn-jvm/</url>
+    <organization>
+        <name>Zeppelin Bend Pty Ltd.</name>
+        <url>https://zepben.com</url>
+    </organization>
+
+    <licenses>
+        <license>
+            <name>Mozilla Public License v2.0</name>
+            <url>https://mozilla.org/MPL/2.0/</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Anthony Charlton</name>
+            <email>anthony.charlton@zepben.com</email>
+            <organization>Zeppelin Bend</organization>
+            <organizationUrl>https://zepben.com</organizationUrl>
+        </developer>
+        <developer>
+            <name>Glenn Carwardine</name>
+            <email>glenn.carwardine@zepben.com</email>
+            <organization>Zeppelin Bend</organization>
+            <organizationUrl>https://zepben.com</organizationUrl>
+        </developer>
+        <developer>
+            <name>Kurt Greaves</name>
+            <email>kurt.greaves@zepben.com</email>
+            <organization>Zeppelin Bend</organization>
+            <organizationUrl>https://zepben.com</organizationUrl>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/zepben/evolve-conn-jvm.git</connection>
+        <developerConnection>scm:git:ssh://github.com/zepben/evolve-conn-jvm.git</developerConnection>
+        <url>https://github.com/zepben/evolve-conn-jvm/src</url>
+    </scm>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -24,18 +65,18 @@
         <dependency>
             <groupId>com.zepben</groupId>
             <artifactId>annotations</artifactId>
-            <version>1.0.0</version>
+            <version>1.3.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.zepben.protobuf</groupId>
             <artifactId>evolve-grpc</artifactId>
-            <version>0.1.0</version>
+            <version>0.7.0</version>
         </dependency>
         <dependency>
             <groupId>com.zepben</groupId>
-            <artifactId>vertx-route-utils</artifactId>
-            <version>5.0.0</version>
+            <artifactId>vertx-utils</artifactId>
+            <version>1.0.0</version>
         </dependency>
 
         <!-- Kotlin -->
@@ -127,21 +168,20 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.zepben.test</groupId>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.zepben</groupId>
             <artifactId>test-utils</artifactId>
-            <version>2.2.0</version>
+            <version>1.0.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.zepben</groupId>
-            <artifactId>vertx-rest-testing-utils</artifactId>
-            <version>2.2.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.zepben</groupId>
-            <artifactId>collection-utils</artifactId>
-            <version>1.1.0</version>
+            <artifactId>zepben-utils</artifactId>
+            <version>1.3.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
