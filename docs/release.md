@@ -10,13 +10,15 @@
 ### v0.3.0
 
 ##### Breaking Changes
-* None.
+* Removed algorithm(alg) from the auth config response 
+* Changed keys in auth config response to align with energy workbench server config:
+    aud -> audience, dom -> issuer
 
 ##### New Features
 * None.
 
 ##### Enhancements
-* None.
+* Added auth type info in the auth config response
 
 ##### Fixes
 * None.
