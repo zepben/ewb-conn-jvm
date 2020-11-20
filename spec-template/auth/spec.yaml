@@ -1,9 +1,10 @@
+## NOTE - If this spec is updated, remember to update the projects making using of the routes in the lib
 openapi: 3.0.0
 servers:
-  - url: /ewb/auth
+  - url: <server_url>
 info:
   version: 0.3.0
-  title: EWB Auth Config API
+  title: Auth Config API
   license:
     name: Zeppelin Bend
 paths:
