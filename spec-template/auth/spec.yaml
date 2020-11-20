@@ -8,10 +8,10 @@ info:
   license:
     name: Zeppelin Bend
 paths:
-  /v1/config:
+  /config:
     get:
       tags:
-        - Auth Config v2
+        - Auth Config
       summary: Retrieve the auth config
       description: >-
         Used to retrieve auth related config for use by clients
