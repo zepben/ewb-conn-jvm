@@ -8,8 +8,8 @@
 
 package com.zepben.evolve.conn.grpc
 
-import com.zepben.auth.grpc.AuthInterceptor
 import io.grpc.Server
+import io.grpc.ServerInterceptor
 import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder
 import io.grpc.netty.shaded.io.netty.handler.ssl.SslContext
@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit
 abstract class GrpcServer(
     val port: Int,
     sslContextConfig: SslContextConfig? = null,
-    authInterceptor: AuthInterceptor? = null
+    interceptors: List<ServerInterceptor> = emptyList()
 ) {
     /**
      * The server builder to configure your server instance
@@ -46,9 +46,8 @@ abstract class GrpcServer(
         createSslContext(sslContextConfig)?.let {
             serverBuilder.sslContext(it)
         }
-
-        if (authInterceptor != null) {
-            serverBuilder.intercept(authInterceptor)
+        interceptors.forEach {
+            serverBuilder.intercept(it)
         }
     }
 
