@@ -68,11 +68,6 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.zepben.protobuf</groupId>
-            <artifactId>evolve-grpc</artifactId>
-            <version>0.7.0</version>
-        </dependency>
-        <dependency>
             <groupId>com.zepben</groupId>
             <artifactId>vertx-utils</artifactId>
             <version>1.1.0</version>
