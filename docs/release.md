@@ -2,8 +2,28 @@
 
 | Version | Released |
 | --- | --- |
+|[0.4.0](#v040)| `TBD` |
 |[0.3.0](#v030)| `13 January 2021` |
 | [0.1.0](#v010) | `08 October 2020` |
+
+---
+
+### v0.4.0
+
+##### Breaking Changes
+* None.
+
+##### New Features
+* None.
+
+##### Enhancements
+* None.
+
+##### Fixes
+* None.
+
+##### Notes
+* None.
 
 ---
 
