@@ -1,12 +1,21 @@
-/*
- * Copyright 2020 Zeppelin Bend Pty Ltd
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */
+// Copyright 2019 Zeppelin Bend Pty Ltd
+// This file is part of zepben-auth.
+//
+// zepben-auth is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// zepben-auth is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with zepben-auth.  If not, see <https://www.gnu.org/licenses/>.
 
-package com.zepben.auth
+
+package com.zepben.auth.server
 
 import com.auth0.jwk.Jwk
 import com.auth0.jwk.JwkException
@@ -15,6 +24,8 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.exceptions.*
 import com.auth0.jwt.interfaces.DecodedJWT
+import com.zepben.auth.common.AuthException
+import com.zepben.auth.common.StatusCode
 import io.vertx.ext.web.handler.impl.HttpStatusException
 import java.security.interfaces.RSAPublicKey
 
@@ -22,28 +33,12 @@ const val WELL_KNOWN_JWKS_PATH = "/.well-known/jwks.json"
 const val AUTHORIZATION_HEADER = "Authorization"
 const val CONTENT_TYPE = "Content-Type"
 
-enum class StatusCode(val code: Int) {
-    // Successful
-    OK(200),
-    // Token was malformed
-    MALFORMED_TOKEN(400),
-    // Failed to authenticate
-    UNAUTHENTICATED(403),
-    // Failed to authenticate, token didn't have required claims
-    PERMISSION_DENIED(403),
-    // All other errors
-    UNKNOWN(500);
-
-}
-
 data class AuthResponse(
     val statusCode: StatusCode,
     val message: String? = null,
     val cause: Throwable? = null,
     val token: DecodedJWT? = null
 )
-
-class AuthException(val code: Int, message: String? = null): Exception(message)
 
 fun AuthResponse.asException(): AuthException = AuthException(statusCode.code, message)
 fun AuthResponse.asHttpException(): HttpStatusException = HttpStatusException(statusCode.code, message)
@@ -88,7 +83,12 @@ open class JWTAuthenticator(
                 val rsaAlg = Algorithm.RSA256(rsaKey.publicKey as RSAPublicKey?, null)
 
                 // verify token signature
-                val verifier = JWT.require(rsaAlg).withAudience(audience).withIssuer(issuer).build()
+                val verifier = JWT
+                    .require(rsaAlg)
+                    .withAudience(audience)
+                    .withIssuer(issuer)
+                    .acceptLeeway(60 * 1000) // Extend valid window by 60 seconds in both directions
+                    .build()
                 verifier.verify(decoded)
 
                 AuthResponse(StatusCode.OK, token = decoded)
