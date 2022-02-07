@@ -42,9 +42,9 @@ import kotlin.Exception
  *                          what you are doing. Setting it to anything other than https is a major security risk as
  *                          tokens will be sent in the clear.
  * @property tokenPath Path for requesting token from `issuer_domain`.
- * @property algorithm Algorithm used for decoding tokens. Note tokens are only decoded for checking expiry time.
  * @property tokenRequestData Data to pass in token requests.
  * @property refreshRequestData Data to pass in refresh token requests.
+ * @property caFilename Filename of X.509 CA certificate used to verify HTTPS responses from token service. Leave as null to use system CAs.
  */
 data class ZepbenTokenFetcher(
     val audience: String,
@@ -55,8 +55,14 @@ data class ZepbenTokenFetcher(
     val tokenPath: String = "/oauth/token",
     val tokenRequestData: JsonObject = JsonObject(),
     val refreshRequestData: JsonObject = JsonObject(),
+    val caFilename: String? = null,
     private val client: HttpClient = HttpClient.newBuilder()
-        .sslContext(if (verifyCertificate) SSLContext.getDefault() else SSLContextUtils.allTrustingSSLContext())
+        .sslContext(
+            if (verifyCertificate)
+                if (caFilename != null) SSLContextUtils.singleCACertSSLContext(caFilename) else SSLContext.getDefault()
+            else
+                SSLContextUtils.allTrustingSSLContext()
+        )
         .build(),
     private var _refreshToken: String? = null
 ) {
@@ -158,6 +164,8 @@ data class ZepbenTokenFetcher(
  * @param audienceField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
  * @param issuerDomainField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
  * @param client HTTP client used to retrieve authentication configuration. Generated from `verifyCertificate` by default.
+ * @param confCAFilename Filename of X.509 CA certificate used to verify HTTPS responses from configuration service. Leave as null to use system CAs.
+ * @param authCAFilename Filename of X.509 CA certificate used to verify HTTPS responses from token service. Leave as null to use system CAs.
  *
  * @returns: A `ZepbenTokenFetcher` if the server reported authentication was configured, otherwise None.
  */
@@ -167,12 +175,27 @@ fun createTokenFetcher(
     authTypeField: String = "authType",
     audienceField: String = "audience",
     issuerDomainField: String = "issuer",
-    client: HttpClient = HttpClient.newBuilder()
-        .sslContext(if (verifyCertificate) SSLContext.getDefault() else SSLContextUtils.allTrustingSSLContext())
+    confCAFilename: String? = null,
+    authCAFilename: String? = null,
+    confClient: HttpClient = HttpClient.newBuilder()
+        .sslContext(
+            if (verifyCertificate)
+                if (confCAFilename != null) SSLContextUtils.singleCACertSSLContext(confCAFilename) else SSLContext.getDefault()
+            else
+                SSLContextUtils.allTrustingSSLContext()
+        )
+        .build(),
+    authClient: HttpClient = HttpClient.newBuilder()
+        .sslContext(
+            if (verifyCertificate)
+                if (authCAFilename != null) SSLContextUtils.singleCACertSSLContext(authCAFilename) else SSLContext.getDefault()
+            else
+                SSLContextUtils.allTrustingSSLContext()
+        )
         .build()
 ): ZepbenTokenFetcher? {
     val request = HttpRequest.newBuilder().uri(URI(confAddress)).GET().build()
-    val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+    val response = confClient.send(request, HttpResponse.BodyHandlers.ofString())
     if (response.statusCode() == StatusCode.OK.code) {
         try {
             val authConfigJson = Json.decodeValue(response.body()) as JsonObject
@@ -182,7 +205,9 @@ fun createTokenFetcher(
                     authConfigJson.getString(audienceField),
                     authConfigJson.getString(issuerDomainField),
                     authMethod,
-                    verifyCertificate
+                    verifyCertificate,
+                    caFilename = authCAFilename,
+                    client = authClient
                 )
             }
         } catch (e: DecodeException) {

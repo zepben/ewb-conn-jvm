@@ -6,7 +6,7 @@
     * `com.zepben.auth.client`
 
 ##### New Features
-* Added client-side authentication class, `ZepbenAuthenticator`
+* Added client-side class that fetches authentication tokens, `ZepbenTokenFetcher`
 
 ##### Enhancements
 * None.

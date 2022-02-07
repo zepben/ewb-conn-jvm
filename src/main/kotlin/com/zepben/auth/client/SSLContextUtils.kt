@@ -17,9 +17,13 @@
 
 package com.zepben.auth.client
 
+import java.io.FileInputStream
+import java.security.KeyStore
 import java.security.SecureRandom
+import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 
 object SSLContextUtils {
@@ -40,6 +44,25 @@ object SSLContextUtils {
     fun allTrustingSSLContext(): SSLContext {
         val sslContext = SSLContext.getInstance("TLS")
         sslContext.init(emptyArray(), arrayOf(allTrustingTrustManager), SecureRandom())
+        return sslContext
+    }
+
+    /**
+     * Make SSLContext that trusts a single X.509 CA certificate.
+     */
+    fun singleCACertSSLContext(caCertFilename: String): SSLContext {
+        val cf = CertificateFactory.getInstance("X.509")
+        val caCert = cf.generateCertificate(FileInputStream(caCertFilename))
+
+        val ks = KeyStore.getInstance(KeyStore.getDefaultType())
+        ks.load(null) // Initialise to empty keystore
+        ks.setCertificateEntry("caCert", caCert)
+
+        val tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+        tmf.init(ks)
+
+        val sslContext = SSLContext.getInstance("TLS")
+        sslContext.init(emptyArray(), tmf.trustManagers, SecureRandom())
         return sslContext
     }
 }
