@@ -18,7 +18,7 @@ import java.net.http.HttpClient
 import java.net.http.HttpResponse
 
 
-internal class ZepbenAuthenticatorTest {
+internal class ZepbenTokenFetcherTest {
     private var server: TestHttpServer? = null
     private var port = 8080
 
@@ -38,37 +38,37 @@ internal class ZepbenAuthenticatorTest {
     }
 
     @Test
-    fun testCreateAuthenticatorSuccess() {
+    fun testCreateTokenFetcherSuccess() {
         doReturn(StatusCode.OK.code).`when`(response).statusCode()
         doReturn(
             "{\"authType\": \"AUTH0\", \"audience\": \"test_audience\", \"issuer\": \"test_issuer\"}"
         ).`when`(response).body()
 
-        val authenticator = createAuthenticator("https://testaddress", client = client)
+        val tokenFetcher = createTokenFetcher("https://testaddress", client = client)
         verify(client, times(1)).send(any(), any(HttpResponse.BodyHandler::class.java))
-        assertThat(authenticator?.audience, equalTo("test_audience"))
-        assertThat(authenticator?.issuerDomain, equalTo("test_issuer"))
+        assertThat(tokenFetcher?.audience, equalTo("test_audience"))
+        assertThat(tokenFetcher?.issuerDomain, equalTo("test_issuer"))
     }
 
     @Test
-    fun testCreateAuthenticatorNoAuth() {
+    fun testCreateTokenFetcherNoAuth() {
         doReturn(StatusCode.OK.code).`when`(response).statusCode()
         doReturn(
             "{\"authType\": \"NONE\", \"audience\": \"\", \"issuer\": \"\"}"
         ).`when`(response).body()
 
-        val authenticator = createAuthenticator("https://testaddress", client = client)
+        val tokenFetcher = createTokenFetcher("https://testaddress", client = client)
         verify(client, times(1)).send(any(), any(HttpResponse.BodyHandler::class.java))
-        assertThat(authenticator, equalTo(null))
+        assertThat(tokenFetcher, equalTo(null))
     }
 
     @Test
-    fun testCreateAuthenticatorBadResponse() {
+    fun testCreateTokenFetcherBadResponse() {
         doReturn(StatusCode.NOT_FOUND.code).`when`(response).statusCode()
         doReturn("Not found").`when`(response).body()
 
         val exception = assertThrows(AuthException::class.java) {
-            createAuthenticator("https://testaddress", client = client)
+            createTokenFetcher("https://testaddress", client = client)
         }
         verify(client, times(1)).send(any(), any(HttpResponse.BodyHandler::class.java))
         assertThat(exception.statusCode, equalTo(StatusCode.NOT_FOUND.code))
@@ -76,12 +76,12 @@ internal class ZepbenAuthenticatorTest {
     }
 
     @Test
-    fun testCreateAuthenticatorMissingJson() {
+    fun testCreateTokenFetcherMissingJson() {
         doReturn(StatusCode.OK.code).`when`(response).statusCode()
         doReturn("test text").`when`(response).body()
 
         val exception = assertThrows(AuthException::class.java) {
-            createAuthenticator("https://testaddress", client = client)
+            createTokenFetcher("https://testaddress", client = client)
         }
         verify(client, times(1)).send(any(), any(HttpResponse.BodyHandler::class.java))
         assertThat(exception.statusCode, equalTo(StatusCode.OK.code))
@@ -89,12 +89,12 @@ internal class ZepbenAuthenticatorTest {
     }
 
     @Test
-    fun testCreateAuthenticatorNonObjectJson() {
+    fun testCreateTokenFetcherNonObjectJson() {
         doReturn(StatusCode.OK.code).`when`(response).statusCode()
         doReturn("[\"authType\"]").`when`(response).body()
 
         val exception = assertThrows(AuthException::class.java) {
-            createAuthenticator("https://testaddress", client = client)
+            createTokenFetcher("https://testaddress", client = client)
         }
         verify(client, times(1)).send(any(), any(HttpResponse.BodyHandler::class.java))
         assertThat(exception.statusCode, equalTo(StatusCode.OK.code))
@@ -109,7 +109,7 @@ internal class ZepbenAuthenticatorTest {
         doReturn(StatusCode.OK.code).`when`(response).statusCode()
         doReturn("{\"access_token\":\"$TOKEN\", \"token_type\":\"Bearer\"}").`when`(response).body()
 
-        val authenticator = ZepbenAuthenticator(
+        val tokenFetcher = ZepbenTokenFetcher(
             audience = "test_audience",
             issuerDomain = "testissuer.com.au",
             authMethod = AuthMethod.AUTH0,
@@ -119,7 +119,7 @@ internal class ZepbenAuthenticatorTest {
             client = client
         )
         verify(client, times(0)).send(any(), any(HttpResponse.BodyHandler::class.java))
-        val token = authenticator.fetchToken()
+        val token = tokenFetcher.fetchToken()
         verify(client, times(1)).send(any(), any(HttpResponse.BodyHandler::class.java))
         assertThat(token, equalTo("Bearer $TOKEN"))
     }
@@ -129,7 +129,7 @@ internal class ZepbenAuthenticatorTest {
         doReturn(StatusCode.NOT_FOUND.code).`when`(response).statusCode()
         doReturn("test text").`when`(response).body()
 
-        val authenticator = ZepbenAuthenticator(
+        val tokenFetcher = ZepbenTokenFetcher(
             audience = "test_audience",
             issuerDomain = "testissuer.com.au",
             authMethod = AuthMethod.AUTH0,
@@ -139,7 +139,7 @@ internal class ZepbenAuthenticatorTest {
             client = client
         )
         verify(client, times(0)).send(any(), any(HttpResponse.BodyHandler::class.java))
-        val exception = assertThrows(AuthException::class.java) { authenticator.fetchToken() }
+        val exception = assertThrows(AuthException::class.java) { tokenFetcher.fetchToken() }
         verify(client, times(1)).send(any(), any(HttpResponse.BodyHandler::class.java))
         assertThat(exception.statusCode, equalTo(StatusCode.NOT_FOUND.code))
         assertThat(exception.message, equalTo("Token fetch failed, Error was: 404 - test text"))
@@ -150,7 +150,7 @@ internal class ZepbenAuthenticatorTest {
         doReturn(StatusCode.OK.code).`when`(response).statusCode()
         doReturn("test text").`when`(response).body()
 
-        val authenticator = ZepbenAuthenticator(
+        val tokenFetcher = ZepbenTokenFetcher(
             audience = "test_audience",
             issuerDomain = "testissuer.com.au",
             authMethod = AuthMethod.AUTH0,
@@ -160,7 +160,7 @@ internal class ZepbenAuthenticatorTest {
             client = client
         )
         verify(client, times(0)).send(any(), any(HttpResponse.BodyHandler::class.java))
-        val exception = assertThrows(AuthException::class.java) { authenticator.fetchToken() }
+        val exception = assertThrows(AuthException::class.java) { tokenFetcher.fetchToken() }
         verify(client, times(1)).send(any(), any(HttpResponse.BodyHandler::class.java))
         assertThat(exception.statusCode, equalTo(StatusCode.OK.code))
         assertThat(exception.message, equalTo("Response did not contain valid JSON - response was: test text"))
@@ -171,7 +171,7 @@ internal class ZepbenAuthenticatorTest {
         doReturn(StatusCode.OK.code).`when`(response).statusCode()
         doReturn("[\"test text\"]").`when`(response).body()
 
-        val authenticator = ZepbenAuthenticator(
+        val tokenFetcher = ZepbenTokenFetcher(
             audience = "test_audience",
             issuerDomain = "testissuer.com.au",
             authMethod = AuthMethod.AUTH0,
@@ -181,7 +181,7 @@ internal class ZepbenAuthenticatorTest {
             client = client
         )
         verify(client, times(0)).send(any(), any(HttpResponse.BodyHandler::class.java))
-        val exception = assertThrows(AuthException::class.java) { authenticator.fetchToken() }
+        val exception = assertThrows(AuthException::class.java) { tokenFetcher.fetchToken() }
         verify(client, times(1)).send(any(), any(HttpResponse.BodyHandler::class.java))
         assertThat(exception.statusCode, equalTo(StatusCode.OK.code))
         assertThat(exception.message, equalTo("Response was not a JSON object - response was: [\"test text\"]"))
@@ -192,7 +192,7 @@ internal class ZepbenAuthenticatorTest {
         doReturn(StatusCode.OK.code).`when`(response).statusCode()
         doReturn("{\"test\":\"fail\"}").`when`(response).body()
 
-        val authenticator = ZepbenAuthenticator(
+        val tokenFetcher = ZepbenTokenFetcher(
             audience = "test_audience",
             issuerDomain = "testissuer.com.au",
             authMethod = AuthMethod.AUTH0,
@@ -202,7 +202,7 @@ internal class ZepbenAuthenticatorTest {
             client = client
         )
         verify(client, times(0)).send(any(), any(HttpResponse.BodyHandler::class.java))
-        val exception = assertThrows(AuthException::class.java) { authenticator.fetchToken() }
+        val exception = assertThrows(AuthException::class.java) { tokenFetcher.fetchToken() }
         verify(client, times(1)).send(any(), any(HttpResponse.BodyHandler::class.java))
         assertThat(exception.statusCode, equalTo(StatusCode.OK.code))
         assertThat(
@@ -218,7 +218,7 @@ internal class ZepbenAuthenticatorTest {
             "{\"access_token\":\"$TOKEN\", \"refresh_token\": \"test_refresh_token\", \"token_type\":\"Bearer\"}"
         ).`when`(response).body()
 
-        val authenticator = ZepbenAuthenticator(
+        val tokenFetcher = ZepbenTokenFetcher(
             audience = "test_audience",
             issuerDomain = "testissuer.com.au",
             authMethod = AuthMethod.AUTH0,
@@ -229,7 +229,7 @@ internal class ZepbenAuthenticatorTest {
             _refreshToken = "test_refresh_token"
         )
         verify(client, times(0)).send(any(), any(HttpResponse.BodyHandler::class.java))
-        val token = authenticator.fetchToken()
+        val token = tokenFetcher.fetchToken()
         verify(client, times(1)).send(any(), any(HttpResponse.BodyHandler::class.java))
         assertThat(token, equalTo("Bearer $TOKEN"))
     }

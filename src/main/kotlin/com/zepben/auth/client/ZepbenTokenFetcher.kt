@@ -46,7 +46,7 @@ import kotlin.Exception
  * @property tokenRequestData Data to pass in token requests.
  * @property refreshRequestData Data to pass in refresh token requests.
  */
-data class ZepbenAuthenticator(
+data class ZepbenTokenFetcher(
     val audience: String,
     val issuerDomain: String,
     val authMethod: AuthMethod,
@@ -149,19 +149,19 @@ data class ZepbenAuthenticator(
 
 
 /**
- * Helper method to fetch auth related configuration from `confAddress` and create a `ZepbenAuthenticator`
+ * Helper method to fetch auth related configuration from `confAddress` and create a `ZepbenTokenFetcher`
  *
  * @param confAddress Location to retrieve authentication configuration from. Must be a HTTP address that returns a JSON response.
  * @param verifyCertificate: Whether to verify the certificate when making HTTPS requests. Note you should only use a trusted server
  *                           and never set this to False in a production environment.
- * @param authTypeField The field name to look up in the JSON response from the confAddress for `authenticator.authMethod`.
- * @param audienceField The field name to look up in the JSON response from the confAddress for `authenticator.authMethod`.
- * @param issuerDomainField The field name to look up in the JSON response from the confAddress for `authenticator.authMethod`.
+ * @param authTypeField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
+ * @param audienceField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
+ * @param issuerDomainField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
  * @param client HTTP client used to retrieve authentication configuration. Generated from `verifyCertificate` by default.
  *
- * @returns: A `ZepbenAuthenticator` if the server reported authentication was configured, otherwise None.
+ * @returns: A `ZepbenTokenFetcher` if the server reported authentication was configured, otherwise None.
  */
-fun createAuthenticator(
+fun createTokenFetcher(
     confAddress: String,
     verifyCertificate: Boolean = true,
     authTypeField: String = "authType",
@@ -170,7 +170,7 @@ fun createAuthenticator(
     client: HttpClient = HttpClient.newBuilder()
         .sslContext(if (verifyCertificate) SSLContext.getDefault() else SSLContextUtils.allTrustingSSLContext())
         .build()
-): ZepbenAuthenticator? {
+): ZepbenTokenFetcher? {
     val request = HttpRequest.newBuilder().uri(URI(confAddress)).GET().build()
     val response = client.send(request, HttpResponse.BodyHandlers.ofString())
     if (response.statusCode() == StatusCode.OK.code) {
@@ -178,7 +178,7 @@ fun createAuthenticator(
             val authConfigJson = Json.decodeValue(response.body()) as JsonObject
             val authMethod = AuthMethod.valueOf(authConfigJson.getString(authTypeField))
             if (authMethod != AuthMethod.NONE) {
-                return ZepbenAuthenticator(
+                return ZepbenTokenFetcher(
                     authConfigJson.getString(audienceField),
                     authConfigJson.getString(issuerDomainField),
                     authMethod,
