@@ -158,7 +158,7 @@ data class ZepbenTokenFetcher(
  * Helper method to fetch auth related configuration from `confAddress` and create a `ZepbenTokenFetcher`
  *
  * @param confAddress Location to retrieve authentication configuration from. Must be a HTTP address that returns a JSON response.
- * @param verifyCertificate: Whether to verify the certificate when making HTTPS requests. Note you should only use a trusted server
+ * @param verifyCertificates: Whether to verify the certificate when making HTTPS requests. Note you should only use a trusted server
  *                           and never set this to False in a production environment.
  * @param authTypeField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
  * @param audienceField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
@@ -171,7 +171,7 @@ data class ZepbenTokenFetcher(
  */
 fun createTokenFetcher(
     confAddress: String,
-    verifyCertificate: Boolean = true,
+    verifyCertificates: Boolean = true,
     authTypeField: String = "authType",
     audienceField: String = "audience",
     issuerDomainField: String = "issuer",
@@ -179,7 +179,7 @@ fun createTokenFetcher(
     authCAFilename: String? = null,
     confClient: HttpClient = HttpClient.newBuilder()
         .sslContext(
-            if (verifyCertificate)
+            if (verifyCertificates)
                 if (confCAFilename != null) SSLContextUtils.singleCACertSSLContext(confCAFilename) else SSLContext.getDefault()
             else
                 SSLContextUtils.allTrustingSSLContext()
@@ -187,7 +187,7 @@ fun createTokenFetcher(
         .build(),
     authClient: HttpClient = HttpClient.newBuilder()
         .sslContext(
-            if (verifyCertificate)
+            if (verifyCertificates)
                 if (authCAFilename != null) SSLContextUtils.singleCACertSSLContext(authCAFilename) else SSLContext.getDefault()
             else
                 SSLContextUtils.allTrustingSSLContext()
@@ -205,7 +205,7 @@ fun createTokenFetcher(
                     authConfigJson.getString(audienceField),
                     authConfigJson.getString(issuerDomainField),
                     authMethod,
-                    verifyCertificate,
+                    verifyCertificates,
                     caFilename = authCAFilename,
                     client = authClient
                 )
