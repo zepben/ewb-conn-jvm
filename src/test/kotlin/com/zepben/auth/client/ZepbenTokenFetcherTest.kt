@@ -19,28 +19,25 @@ package com.zepben.auth.client
 import com.zepben.auth.common.AuthException
 import com.zepben.auth.common.AuthMethod
 import com.zepben.auth.common.StatusCode
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.AfterEach
-
-import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Test
+import com.zepben.testutils.auth.TOKEN
+import com.zepben.testutils.exception.ExpectException.expect
 import com.zepben.testutils.vertx.TestHttpServer
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.core.IsEqual.equalTo
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.mockito.Mockito.*
-import com.zepben.testutils.auth.TOKEN
-import com.zepben.testutils.exception.ExpectException.expect
-
+import org.mockito.kotlin.mock
 import java.net.http.HttpClient
 import java.net.http.HttpResponse
-
 
 internal class ZepbenTokenFetcherTest {
     private lateinit var server: TestHttpServer
     private var port = 8080
 
-    private val client: HttpClient = mock(HttpClient::class.java)
-    private val response = mock(HttpResponse::class.java)
+    private val client = mock<HttpClient>()
+    private val response = mock<HttpResponse<String>>()
 
     @BeforeEach
     fun beforeEach() {
