@@ -1,14 +1,26 @@
-/*
- * Copyright 2020 Zeppelin Bend Pty Ltd
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */
+// Copyright 2019 Zeppelin Bend Pty Ltd
+// This file is part of zepben-auth.
+//
+// zepben-auth is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// zepben-auth is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with zepben-auth.  If not, see <https://www.gnu.org/licenses/>.
 
-package com.zepben.auth.vertx
+
+package com.zepben.auth.server.vertx
 
 import com.zepben.auth.*
+import com.zepben.auth.common.StatusCode
+import com.zepben.auth.server.TokenAuthenticator
+import com.zepben.auth.server.asHttpException
 import io.vertx.core.AsyncResult
 import io.vertx.core.Future
 import io.vertx.core.Handler
