@@ -27,7 +27,7 @@ import io.vertx.core.http.HttpMethod
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.RoutingContext
 
-private data class AuthConfigResponse(val aud: String, val dom: String, val alg: String)
+private data class AuthConfigResponse(val authType: String, val issuer: String, val audience: String)
 
 fun routeFactory(availableRoute: AvailableRoute, audience: String, domain: String, algorithm: String = "RS256"): Route =
     when (availableRoute) {
@@ -51,7 +51,7 @@ enum class AvailableRoute(private val rv: RouteVersion) : VersionableRoute {
 class AuthConfigRoute(audience: String, domain: String, algorithm: String) : Handler<RoutingContext> {
     private val json: JsonObject = JsonObject.mapFrom(AuthConfigResponse(audience, domain, algorithm))
 
-    override fun handle(event: RoutingContext?) {
+    override fun handle(event: RoutingContext) {
         Respond.withJson(event, HttpResponseStatus.OK, json.encode())
     }
 }

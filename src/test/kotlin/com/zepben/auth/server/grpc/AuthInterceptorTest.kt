@@ -54,18 +54,19 @@ class AuthInterceptorTest {
         var callWasMade = false
         val sch = MockServerCallHandler<Int, Int> { _, metadata ->
             // not really important assert - just to make sure no one balls'd up the test
-            assertThat("Metadata had bearer token.", metadata.containsKey(AUTHORIZATION_METADATA_KEY))
+            assertThat("Metadata is missing bearer token.", metadata.containsKey(AUTHORIZATION_METADATA_KEY))
             callWasMade = true
         }
         authInterceptor.interceptCall(sc, mdWithBearer, sch)
-        assertThat(callWasMade, equalTo(true))
+        assertThat("Call was not made to the authenticator.", callWasMade)
 
         callWasMade = false
         val mdWithBadBearer = Metadata().apply { put(AUTHORIZATION_METADATA_KEY, "Bearer aoeu") }
         sc = MockServerCall({ status, _ ->
             assertThat(status!!.code, equalTo(Status.UNAUTHENTICATED.code))
+            callWasMade = true
         })
         authInterceptor.interceptCall(sc, mdWithBadBearer, sch)
-        assertThat(callWasMade, equalTo(false))
+        assertThat("Call was not made to the authenticator.", callWasMade)
     }
 }

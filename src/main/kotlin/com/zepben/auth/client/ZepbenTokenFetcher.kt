@@ -64,11 +64,11 @@ data class ZepbenTokenFetcher(
                 SSLContextUtils.allTrustingSSLContext()
         )
         .build(),
-    private var _refreshToken: String? = null
+    private var refreshToken: String? = null
 ) {
-    private var _accessToken: String? = null
-    private var _tokenExpiry: Instant = Instant.MIN
-    private var _tokenType: String? = null
+    private var accessToken: String? = null
+    private var tokenExpiry: Instant = Instant.MIN
+    private var tokenType: String? = null
 
     init {
         tokenRequestData.put("audience", audience)
@@ -80,20 +80,20 @@ data class ZepbenTokenFetcher(
      * OAuth2 token provider. Throws an Exception if an access token request fails.
      */
     fun fetchToken(): String {
-        if (Instant.now() > _tokenExpiry) {
+        if (Instant.now() > tokenExpiry) {
             // Stored token has expired, try to refresh
-            _accessToken = null
-            if (!_refreshToken.isNullOrEmpty()) {
+            accessToken = null
+            if (!refreshToken.isNullOrEmpty()) {
                 fetchTokenAuth0(useRefresh = true)
             }
 
-            if (_accessToken == null) {
+            if (accessToken == null) {
                 // If using the refresh token did not work for any reason, self._access_token will still be None.
                 // and thus we must try to get a fresh access token using credentials instead.
                 fetchTokenAuth0()
             }
 
-            if (_tokenType.isNullOrEmpty() or _accessToken.isNullOrEmpty()) {
+            if (tokenType.isNullOrEmpty() or accessToken.isNullOrEmpty()) {
                 throw Exception(
                     "Token couldn't be retrieved from ${URL(issuerProtocol, issuerDomain, tokenPath)} using " +
                     "configuration $authMethod, audience: $audience, token issuer: $issuerDomain"
@@ -101,7 +101,7 @@ data class ZepbenTokenFetcher(
             }
         }
 
-        return "$_tokenType $_accessToken"
+        return "$tokenType $accessToken"
     }
 
     private fun fetchTokenAuth0(useRefresh: Boolean = false) {
@@ -143,12 +143,12 @@ data class ZepbenTokenFetcher(
             )
         }
 
-        _tokenType = data.getString("token_type")
-        _accessToken = data.getString("access_token")
-        _tokenExpiry = JWT.decode(_accessToken).getClaim("exp")?.asDate()?.toInstant() ?: Instant.MIN
+        tokenType = data.getString("token_type")
+        accessToken = data.getString("access_token")
+        tokenExpiry = JWT.decode(accessToken).getClaim("exp")?.asDate()?.toInstant() ?: Instant.MIN
 
         if (useRefresh) {
-            _refreshToken = data.getString("refresh_token")
+            refreshToken = data.getString("refresh_token")
         }
     }
 }

@@ -38,7 +38,7 @@ class AuthConfigRouteTest {
             RouteVersionUtils.forVersion(
                 AvailableRoute.values(),
                 2
-            ) { routeFactory(it, "test-aud", "test-domain", "test-alg") }
+            ) { routeFactory(it, "test-auth-type", "test-issuer", "test-audience") }
         )
         port = server!!.listen()
     }
@@ -46,9 +46,9 @@ class AuthConfigRouteTest {
     @Test
     fun testHandle() {
         val expectedResponse: String = JsonObject().apply {
-            put("aud", "test-aud")
-            put("dom", "test-domain")
-            put("alg", "test-alg")
+            put("authType", "test-auth-type")
+            put("issuer", "test-issuer")
+            put("audience", "test-audience")
         }.encode()
 
         val response = RestAssured.given()
