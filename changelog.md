@@ -1,5 +1,3 @@
-### v0.4.0
-
 ##### Breaking Changes
 * Split server and client specific auth code into two packages:
     * `com.zepben.auth.server`
