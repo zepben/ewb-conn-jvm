@@ -2,7 +2,7 @@
 * None.
 
 ##### New Features
-* None.
+* Allow configuration of the maximum inbound message size for GrpcServer.
 
 ##### Enhancements
 * None.
