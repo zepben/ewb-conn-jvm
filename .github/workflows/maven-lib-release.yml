@@ -44,28 +44,16 @@ jobs:
           git checkout release
         shell: bash
 
-      # - name: Maven deploy to Central
-      #   id: build
-      #   uses: zepben/maven-deploy-central-action@main
-      #   with:
-      #     ZEPBEN_GPG_KEY: ${{ secrets.ZEPBEN_GPG_KEY_B64 }}
-      #     OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-      #     OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
-      #     GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
-      #     GPG_KEY_PASSWORD: ${{ secrets.GPG_KEY_PASSWORD }}
-      #   continue-on-error: true
-
-      - name: Maven pack
+      - name: Maven deploy to Central
         id: build
-        run: |
-          mvn clean package -f pom.xml
-          artifactId=$(xmlstarlet pyx pom.xml | grep -v ^A | xmlstarlet p2x | xmlstarlet sel -t -v "/project/artifactId")
-          version=$(xmlstarlet pyx pom.xml | grep -v ^A | xmlstarlet p2x | xmlstarlet sel -t -v "/project/version")
-          artifact="${artifactId}-${version}.jar"
-          echo "::set-output name=artifact::$(echo $artifact)"
-          echo "::set-output name=artifact-path::$(echo $(dirname pom.xml)/target/$artifact)"
-          echo "::set-output name=version::$(echo $version)"
-        shell: bash
+        uses: zepben/maven-deploy-central-action@main
+        with:
+          ZEPBEN_GPG_KEY: ${{ secrets.ZEPBEN_GPG_KEY_B64 }}
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+          GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
+          GPG_KEY_PASSWORD: ${{ secrets.GPG_KEY_PASSWORD }}
+        continue-on-error: true
 
       - name: Upload coverage to Codecov
         if: steps.build.outcome == 'success'
@@ -97,7 +85,6 @@ jobs:
         run: | 
           git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
           git fetch --all
-          git pull
           git merge origin/release
           git push origin ${GITHUB_REF/refs\/heads\//}
           artifactId=$(xmlstarlet pyx pom.xml | grep -v ^A | xmlstarlet p2x | xmlstarlet sel -t -v "/project/artifactId")
