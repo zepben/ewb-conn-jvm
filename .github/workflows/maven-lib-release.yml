@@ -59,11 +59,11 @@ jobs:
         id: build
         run: |
           mvn clean package -f pom.xml
-          artifactId=$(xmlstarlet pyx $POM_PATH | grep -v ^A | xmlstarlet p2x | xmlstarlet sel -t -v "/project/artifactId")
-          version=$(xmlstarlet pyx $POM_PATH | grep -v ^A | xmlstarlet p2x | xmlstarlet sel -t -v "/project/version")
+          artifactId=$(xmlstarlet pyx pom.xml | grep -v ^A | xmlstarlet p2x | xmlstarlet sel -t -v "/project/artifactId")
+          version=$(xmlstarlet pyx pom.xml | grep -v ^A | xmlstarlet p2x | xmlstarlet sel -t -v "/project/version")
           artifact="${artifactId}-${version}.jar"
           echo "::set-output name=artifact::$(echo $artifact)"
-          echo "::set-output name=artifact-path::$(echo $(dirname $POM_PATH)/target/$artifact)"
+          echo "::set-output name=artifact-path::$(echo $(dirname pom.xml)/target/$artifact)"
           echo "::set-output name=version::$(echo $version)"
         shell: bash
 
