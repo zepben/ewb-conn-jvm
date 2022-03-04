@@ -1,16 +1,14 @@
 ##### Breaking Changes
-* Split server and client specific auth code into two packages:
-    * `com.zepben.auth.server`
-    * `com.zepben.auth.client`
+* None.
 
 ##### New Features
-* Added client-side class that fetches authentication tokens, `ZepbenTokenFetcher`
+* None.
 
 ##### Enhancements
 * None.
 
 ##### Fixes
-* Add 60 second leeway to JWT authentication
+* None.
 
 ##### Notes
 * None.
