@@ -18,7 +18,7 @@ import io.grpc.Status
 fun runServerCall(
     interceptor: ServerInterceptor,
     sc: (Status?, Metadata?) -> Unit,
-    sch: ((ServerCall<Int, Int>, Metadata) -> Unit)?,
+    sch: (ServerCall<Int, Int>, Metadata) -> Unit,
     metadata: Metadata = Metadata()
 ) {
     var wasCalled = false
@@ -26,7 +26,7 @@ fun runServerCall(
         sc(s, m)
         wasCalled = true
     })
-    interceptor.interceptCall(mockSc, metadata, sch?.let { MockServerCallHandler(sch) })
+    interceptor.interceptCall(mockSc, metadata, MockServerCallHandler(sch))
     assert(wasCalled)
 }
 
