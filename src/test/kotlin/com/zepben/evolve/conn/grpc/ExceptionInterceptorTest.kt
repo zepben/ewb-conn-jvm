@@ -69,19 +69,4 @@ class ExceptionInterceptorTest {
             { call, metadata -> call.close(Status.UNKNOWN.withCause(NoSuchMethodError("some description")), metadata) }
         )
     }
-
-    fun runServerCall(
-        interceptor: ServerInterceptor,
-        sc: (Status?, Metadata?) -> Unit,
-        sch: (ServerCall<Int, Int>, Metadata) -> Unit,
-        metadata: Metadata = Metadata()
-    ) {
-        var wasCalled = false
-        val mockSc = MockServerCall<Int, Int>({ s, m ->
-            sc(s, m)
-            wasCalled = true
-        })
-        interceptor.interceptCall(mockSc, metadata, MockServerCallHandler(sch))
-        assert(wasCalled)
-    }
 }

@@ -16,6 +16,7 @@
 
 ##### New Features
 * Allow configuration of the maximum inbound message size for GrpcServer.
+* Add GRPC server interceptor that compresses responses.
 
 ##### Enhancements
 * None.
