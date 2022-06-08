@@ -13,14 +13,14 @@ import io.grpc.ServerCall
 import io.grpc.ServerCallHandler
 import io.grpc.ServerInterceptor
 
-class CompressionInterceptor : ServerInterceptor {
+class CompressionInterceptor(val compressor: String = "gzip") : ServerInterceptor {
 
     override fun <ReqT : Any?, RespT : Any?> interceptCall(
         call: ServerCall<ReqT, RespT>?,
         headers: Metadata?,
         next: ServerCallHandler<ReqT, RespT>?
     ): ServerCall.Listener<ReqT>? {
-        call?.setCompression("gzip")
+        call?.setCompression(compressor)
         return next?.startCall(call, headers)
     }
 
