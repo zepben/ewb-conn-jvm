@@ -13,7 +13,7 @@
     <version>0.5.0-SNAPSHOT5</version>
     <packaging>jar</packaging>
     <name>${project.groupId}:${project.artifactId}</name>
-    <description>Super Pom for Evolve Maven projects. Used for version management within the evolve platform.</description>
+    <description>A collection of utilities to create and manage connections between Zepben services and clients.</description>
     <url>https://github.com/zepben/evolve-conn-jvm/</url>
     <organization>
         <name>Zeppelin Bend Pty Ltd.</name>
