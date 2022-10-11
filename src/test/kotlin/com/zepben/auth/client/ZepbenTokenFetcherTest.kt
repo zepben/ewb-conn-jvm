@@ -133,7 +133,6 @@ internal class ZepbenTokenFetcherTest {
             audience = "test_audience",
             issuerDomain = "testissuer.com.au",
             authMethod = AuthMethod.AUTH0,
-            verifyCertificate = true,
             issuerProtocol = "https",
             tokenPath = "/fake/path",
             client = client
@@ -153,7 +152,6 @@ internal class ZepbenTokenFetcherTest {
             audience = "test_audience",
             issuerDomain = "testissuer.com.au",
             authMethod = AuthMethod.AUTH0,
-            verifyCertificate = true,
             issuerProtocol = "https",
             tokenPath = "/fake/path",
             client = client
@@ -179,7 +177,6 @@ internal class ZepbenTokenFetcherTest {
             audience = "test_audience",
             issuerDomain = "testissuer.com.au",
             authMethod = AuthMethod.AUTH0,
-            verifyCertificate = true,
             issuerProtocol = "https",
             tokenPath = "/fake/path",
             client = client
@@ -205,7 +202,6 @@ internal class ZepbenTokenFetcherTest {
             audience = "test_audience",
             issuerDomain = "testissuer.com.au",
             authMethod = AuthMethod.AUTH0,
-            verifyCertificate = true,
             issuerProtocol = "https",
             tokenPath = "/fake/path",
             client = client
@@ -231,7 +227,6 @@ internal class ZepbenTokenFetcherTest {
             audience = "test_audience",
             issuerDomain = "testissuer.com.au",
             authMethod = AuthMethod.AUTH0,
-            verifyCertificate = true,
             issuerProtocol = "https",
             tokenPath = "/fake/path",
             client = client
@@ -259,7 +254,6 @@ internal class ZepbenTokenFetcherTest {
             audience = "test_audience",
             issuerDomain = "testissuer.com.au",
             authMethod = AuthMethod.AUTH0,
-            verifyCertificate = true,
             issuerProtocol = "https",
             tokenPath = "/fake/path",
             client = client,
