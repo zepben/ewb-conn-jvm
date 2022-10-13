@@ -22,6 +22,10 @@ import com.zepben.auth.common.StatusCode
 import com.zepben.testutils.auth.TOKEN
 import com.zepben.testutils.exception.ExpectException.expect
 import com.zepben.testutils.vertx.TestHttpServer
+import io.mockk.every
+import io.mockk.mockkObject
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.core.IsEqual.equalTo
 import org.junit.jupiter.api.AfterEach
@@ -31,6 +35,7 @@ import org.mockito.Mockito.*
 import org.mockito.kotlin.mock
 import java.net.http.HttpClient
 import java.net.http.HttpResponse
+import javax.net.ssl.SSLContext
 
 internal class ZepbenTokenFetcherTest {
     private lateinit var server: TestHttpServer
@@ -49,6 +54,7 @@ internal class ZepbenTokenFetcherTest {
     @AfterEach
     fun afterEach() {
         server.close()
+        unmockkAll()
     }
 
     @Test
@@ -264,4 +270,66 @@ internal class ZepbenTokenFetcherTest {
         verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
         assertThat(token, equalTo("Bearer $TOKEN"))
     }
+
+//    @Test
+//    fun constructorWithVerifyCertificatesOptionForwardsParameters() {
+//        mockkConstructor(ZepbenTokenFetcher::class)
+//        verify { anyConstructed<ZepbenTokenFetcher>() }
+//    }
+
+    @Test
+    fun testCreateTokenFetcherWithVerifyCertificatesOption() {
+        val secureClient = mock<HttpClient>()
+        val insecureClient = mock<HttpClient>()
+        val secureTokenFetcher = mock<ZepbenTokenFetcher>()
+        val insecureTokenFetcher = mock<ZepbenTokenFetcher>()
+        mockkStatic("com.zepben.auth.client.ZepbenTokenFetcherKt")
+        every {
+            createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", secureClient, secureClient)
+        } returns secureTokenFetcher
+        every {
+            createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", insecureClient, insecureClient)
+        } returns insecureTokenFetcher
+
+        val secureSSLContext = mock<SSLContext>()
+        val insecureSSLContext = mock<SSLContext>()
+        mockkStatic(SSLContext::class)
+        mockkObject(SSLContextUtils)
+        every { SSLContext.getDefault() } returns secureSSLContext
+        every { SSLContextUtils.allTrustingSSLContext() } returns insecureSSLContext
+        
+        mockkStatic(HttpClient::class)
+        every { HttpClient.newBuilder().sslContext(secureSSLContext).build() } returns secureClient
+        every { HttpClient.newBuilder().sslContext(insecureSSLContext).build() } returns insecureClient
+
+        assertThat(createTokenFetcher("confAddress", true, "authTypeField", "audienceField", "issuerDomainField"), equalTo(secureTokenFetcher))
+        assertThat(createTokenFetcher("confAddress", false, "authTypeField", "audienceField", "issuerDomainField"), equalTo(insecureTokenFetcher))
+    }
+
+    @Test
+    fun testCreateTokenFetcherWithCAFilenames() {
+        val secureConfClient = mock<HttpClient>()
+        val secureAuthClient = mock<HttpClient>()
+        val secureTokenFetcher = mock<ZepbenTokenFetcher>()
+        mockkStatic("com.zepben.auth.client.ZepbenTokenFetcherKt")
+        every {
+            createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", secureConfClient, secureAuthClient)
+        } returns secureTokenFetcher
+
+        val secureConfSSLContext = mock<SSLContext>()
+        val secureAuthSSLContext = mock<SSLContext>()
+        mockkObject(SSLContextUtils)
+        every { SSLContextUtils.singleCACertSSLContext("confCAFilename") } returns secureConfSSLContext
+        every { SSLContextUtils.singleCACertSSLContext("authCAFilename") } returns secureAuthSSLContext
+
+        mockkStatic(HttpClient::class)
+        every { HttpClient.newBuilder().sslContext(secureConfSSLContext).build() } returns secureConfClient
+        every { HttpClient.newBuilder().sslContext(secureAuthSSLContext).build() } returns secureAuthClient
+
+        assertThat(
+            createTokenFetcher("confAddress", "confCAFilename", "authCAFilename", "authTypeField", "audienceField", "issuerDomainField"),
+            equalTo(secureTokenFetcher)
+        )
+    }
+
 }
