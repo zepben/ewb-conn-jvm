@@ -22,10 +22,8 @@ import com.zepben.auth.common.StatusCode
 import com.zepben.testutils.auth.TOKEN
 import com.zepben.testutils.exception.ExpectException.expect
 import com.zepben.testutils.vertx.TestHttpServer
-import io.mockk.every
-import io.mockk.mockkObject
-import io.mockk.mockkStatic
-import io.mockk.unmockkAll
+import io.mockk.*
+import io.vertx.core.json.JsonObject
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.core.IsEqual.equalTo
 import org.junit.jupiter.api.AfterEach
@@ -44,11 +42,38 @@ internal class ZepbenTokenFetcherTest {
     private val client = mock<HttpClient>()
     private val response = mock<HttpResponse<String>>()
 
+    private val secureSSLContext = mock<SSLContext>()
+    private val secureConfSSLContext = mock<SSLContext>()
+    private val secureAuthSSLContext = mock<SSLContext>()
+    private val insecureSSLContext = mock<SSLContext>()
+
+    private val secureClient = mock<HttpClient>()
+    private val secureConfClient = mock<HttpClient>()
+    private val secureAuthClient = mock<HttpClient>()
+    private val insecureClient = mock<HttpClient>()
+
+    private val secureTokenFetcher = mock<ZepbenTokenFetcher>()
+    private val insecureTokenFetcher = mock<ZepbenTokenFetcher>()
+
     @BeforeEach
     fun beforeEach() {
         server = TestHttpServer()
         port = server.listen()
         doReturn(response).`when`(client).send(any(), any<HttpResponse.BodyHandler<String>>())
+
+        mockkStatic(SSLContext::class)
+        every { SSLContext.getDefault() } returns secureSSLContext
+
+        mockkObject(SSLContextUtils)
+        every { SSLContextUtils.allTrustingSSLContext() } returns insecureSSLContext
+        every { SSLContextUtils.singleCACertSSLContext("confCAFilename") } returns secureConfSSLContext
+        every { SSLContextUtils.singleCACertSSLContext("authCAFilename") } returns secureAuthSSLContext
+
+        mockkStatic(HttpClient::class)
+        every { HttpClient.newBuilder().sslContext(secureSSLContext).build() } returns secureClient
+        every { HttpClient.newBuilder().sslContext(insecureSSLContext).build() } returns insecureClient
+        every { HttpClient.newBuilder().sslContext(secureConfSSLContext).build() } returns secureConfClient
+        every { HttpClient.newBuilder().sslContext(secureAuthSSLContext).build() } returns secureAuthClient
     }
 
     @AfterEach
@@ -271,18 +296,39 @@ internal class ZepbenTokenFetcherTest {
         assertThat(token, equalTo("Bearer $TOKEN"))
     }
 
-//    @Test
-//    fun constructorWithVerifyCertificatesOptionForwardsParameters() {
-//        mockkConstructor(ZepbenTokenFetcher::class)
-//        verify { anyConstructed<ZepbenTokenFetcher>() }
-//    }
+    @Test
+    fun testConstructorWithVerifyCertificatesOption() {
+        doReturn(response).`when`(secureClient).send(any(), any<HttpResponse.BodyHandler<String>>())
+        doReturn(response).`when`(insecureClient).send(any(), any<HttpResponse.BodyHandler<String>>())
+
+        doReturn(StatusCode.OK.code).`when`(response).statusCode()
+        doReturn("{\"access_token\":\"$TOKEN\", \"token_type\":\"Bearer\"}").`when`(response).body()
+
+        assertThat(
+            ZepbenTokenFetcher("audience", "issuerDomain", AuthMethod.AUTH0, true).fetchToken(),
+            equalTo("Bearer $TOKEN")
+        )
+        assertThat(
+            ZepbenTokenFetcher("audience", "issuerDomain", AuthMethod.AUTH0, false).fetchToken(),
+            equalTo("Bearer $TOKEN")
+        )
+    }
+
+    @Test
+    fun testConstructorWithCAFilename() {
+        doReturn(response).`when`(secureAuthClient).send(any(), any<HttpResponse.BodyHandler<String>>())
+
+        doReturn(StatusCode.OK.code).`when`(response).statusCode()
+        doReturn("{\"access_token\":\"$TOKEN\", \"token_type\":\"Bearer\"}").`when`(response).body()
+
+        assertThat(
+            ZepbenTokenFetcher("audience", "issuerDomain", AuthMethod.AUTH0, caFilename = "authCAFilename").fetchToken(),
+            equalTo("Bearer $TOKEN")
+        )
+    }
 
     @Test
     fun testCreateTokenFetcherWithVerifyCertificatesOption() {
-        val secureClient = mock<HttpClient>()
-        val insecureClient = mock<HttpClient>()
-        val secureTokenFetcher = mock<ZepbenTokenFetcher>()
-        val insecureTokenFetcher = mock<ZepbenTokenFetcher>()
         mockkStatic("com.zepben.auth.client.ZepbenTokenFetcherKt")
         every {
             createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", secureClient, secureClient)
@@ -291,40 +337,16 @@ internal class ZepbenTokenFetcherTest {
             createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", insecureClient, insecureClient)
         } returns insecureTokenFetcher
 
-        val secureSSLContext = mock<SSLContext>()
-        val insecureSSLContext = mock<SSLContext>()
-        mockkStatic(SSLContext::class)
-        mockkObject(SSLContextUtils)
-        every { SSLContext.getDefault() } returns secureSSLContext
-        every { SSLContextUtils.allTrustingSSLContext() } returns insecureSSLContext
-        
-        mockkStatic(HttpClient::class)
-        every { HttpClient.newBuilder().sslContext(secureSSLContext).build() } returns secureClient
-        every { HttpClient.newBuilder().sslContext(insecureSSLContext).build() } returns insecureClient
-
         assertThat(createTokenFetcher("confAddress", true, "authTypeField", "audienceField", "issuerDomainField"), equalTo(secureTokenFetcher))
         assertThat(createTokenFetcher("confAddress", false, "authTypeField", "audienceField", "issuerDomainField"), equalTo(insecureTokenFetcher))
     }
 
     @Test
     fun testCreateTokenFetcherWithCAFilenames() {
-        val secureConfClient = mock<HttpClient>()
-        val secureAuthClient = mock<HttpClient>()
-        val secureTokenFetcher = mock<ZepbenTokenFetcher>()
         mockkStatic("com.zepben.auth.client.ZepbenTokenFetcherKt")
         every {
             createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", secureConfClient, secureAuthClient)
         } returns secureTokenFetcher
-
-        val secureConfSSLContext = mock<SSLContext>()
-        val secureAuthSSLContext = mock<SSLContext>()
-        mockkObject(SSLContextUtils)
-        every { SSLContextUtils.singleCACertSSLContext("confCAFilename") } returns secureConfSSLContext
-        every { SSLContextUtils.singleCACertSSLContext("authCAFilename") } returns secureAuthSSLContext
-
-        mockkStatic(HttpClient::class)
-        every { HttpClient.newBuilder().sslContext(secureConfSSLContext).build() } returns secureConfClient
-        every { HttpClient.newBuilder().sslContext(secureAuthSSLContext).build() } returns secureAuthClient
 
         assertThat(
             createTokenFetcher("confAddress", "confCAFilename", "authCAFilename", "authTypeField", "audienceField", "issuerDomainField"),
