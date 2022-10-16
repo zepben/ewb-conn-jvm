@@ -162,7 +162,7 @@ data class ZepbenTokenFetcher(
         val body = if (useRefresh) refreshRequestData.toString() else tokenRequestData.toString()
         val request = HttpRequest.newBuilder()
             .uri(URL(issuerProtocol, issuerDomain, tokenPath).toURI())
-            .header("content-type", "application/x-www-form-urlencoded")
+            .header("content-type", "application/json")
             .POST(HttpRequest.BodyPublishers.ofString(body))
             .build()
         val response = client.send(request, HttpResponse.BodyHandlers.ofString())
