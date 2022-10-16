@@ -23,7 +23,6 @@ import com.zepben.testutils.auth.TOKEN
 import com.zepben.testutils.exception.ExpectException.expect
 import com.zepben.testutils.vertx.TestHttpServer
 import io.mockk.*
-import io.vertx.core.json.JsonObject
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.core.IsEqual.equalTo
 import org.junit.jupiter.api.AfterEach
@@ -70,6 +69,7 @@ internal class ZepbenTokenFetcherTest {
         every { SSLContextUtils.singleCACertSSLContext("authCAFilename") } returns secureAuthSSLContext
 
         mockkStatic(HttpClient::class)
+        every { HttpClient.newHttpClient() } returns secureClient
         every { HttpClient.newBuilder().sslContext(secureSSLContext).build() } returns secureClient
         every { HttpClient.newBuilder().sslContext(insecureSSLContext).build() } returns insecureClient
         every { HttpClient.newBuilder().sslContext(secureConfSSLContext).build() } returns secureConfClient
@@ -305,11 +305,11 @@ internal class ZepbenTokenFetcherTest {
         doReturn("{\"access_token\":\"$TOKEN\", \"token_type\":\"Bearer\"}").`when`(response).body()
 
         assertThat(
-            ZepbenTokenFetcher("audience", "issuerDomain", AuthMethod.AUTH0, true).fetchToken(),
+            ZepbenTokenFetcher("audience", "issuerDomain", AuthMethod.AUTH0, verifyCertificate = true).fetchToken(),
             equalTo("Bearer $TOKEN")
         )
         assertThat(
-            ZepbenTokenFetcher("audience", "issuerDomain", AuthMethod.AUTH0, false).fetchToken(),
+            ZepbenTokenFetcher("audience", "issuerDomain", AuthMethod.AUTH0, verifyCertificate = false).fetchToken(),
             equalTo("Bearer $TOKEN")
         )
     }
@@ -337,19 +337,29 @@ internal class ZepbenTokenFetcherTest {
             createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", insecureClient, insecureClient)
         } returns insecureTokenFetcher
 
-        assertThat(createTokenFetcher("confAddress", true, "authTypeField", "audienceField", "issuerDomainField"), equalTo(secureTokenFetcher))
-        assertThat(createTokenFetcher("confAddress", false, "authTypeField", "audienceField", "issuerDomainField"), equalTo(insecureTokenFetcher))
+        assertThat(createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", true), equalTo(secureTokenFetcher))
+        assertThat(createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", false), equalTo(insecureTokenFetcher))
     }
 
     @Test
     fun testCreateTokenFetcherWithCAFilenames() {
+        val customCASecureTokenFetcher = mock<ZepbenTokenFetcher>()
         mockkStatic("com.zepben.auth.client.ZepbenTokenFetcherKt")
         every {
             createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", secureConfClient, secureAuthClient)
+        } returns customCASecureTokenFetcher
+        every {
+            createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", secureClient, secureClient)
         } returns secureTokenFetcher
 
         assertThat(
-            createTokenFetcher("confAddress", "confCAFilename", "authCAFilename", "authTypeField", "audienceField", "issuerDomainField"),
+            createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", "confCAFilename", "authCAFilename"),
+            equalTo(customCASecureTokenFetcher)
+        )
+
+        // Default parameters should make HttpClients with system CAs
+        assertThat(
+            createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField"),
             equalTo(secureTokenFetcher)
         )
     }

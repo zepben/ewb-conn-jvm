@@ -76,11 +76,11 @@ data class ZepbenTokenFetcher(
         audience: String,
         issuerDomain: String,
         authMethod: AuthMethod,
-        verifyCertificate: Boolean,
         issuerProtocol: String = "https",
         tokenPath: String = "/oauth/token",
         tokenRequestData: JsonObject = JsonObject(),
         refreshRequestData: JsonObject = JsonObject(),
+        verifyCertificate: Boolean,
         refreshToken: String? = null
     ) : this(
         audience, issuerDomain, authMethod, issuerProtocol, tokenPath, tokenRequestData, refreshRequestData,
@@ -108,11 +108,11 @@ data class ZepbenTokenFetcher(
         audience: String,
         issuerDomain: String,
         authMethod: AuthMethod,
-        caFilename: String,
         issuerProtocol: String = "https",
         tokenPath: String = "/oauth/token",
         tokenRequestData: JsonObject = JsonObject(),
         refreshRequestData: JsonObject = JsonObject(),
+        caFilename: String,
         refreshToken: String? = null
     ) : this(
         audience, issuerDomain, authMethod, issuerProtocol, tokenPath, tokenRequestData, refreshRequestData,
@@ -223,8 +223,8 @@ fun createTokenFetcher(
     authTypeField: String = "authType",
     audienceField: String = "audience",
     issuerDomainField: String = "issuer",
-    confClient: HttpClient = HttpClient.newHttpClient(),
-    authClient: HttpClient = HttpClient.newHttpClient()
+    confClient: HttpClient,
+    authClient: HttpClient
 ): ZepbenTokenFetcher? {
     val request = HttpRequest.newBuilder().uri(URI(confAddress)).GET().build()
     val response = confClient.send(request, HttpResponse.BodyHandlers.ofString())
@@ -264,20 +264,20 @@ fun createTokenFetcher(
  * Helper method to fetch auth related configuration from `confAddress` and create a `ZepbenTokenFetcher`
  *
  * @param confAddress Location to retrieve authentication configuration from. Must be a HTTP address that returns a JSON response.
- * @param verifyCertificates: Whether to verify the certificate when making HTTPS requests. Note you should only use a trusted server
- *                           and never set this to False in a production environment.
  * @param authTypeField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
  * @param audienceField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
  * @param issuerDomainField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
+ * @param verifyCertificates: Whether to verify the certificate when making HTTPS requests. Note you should only use a trusted server
+ *                            and never set this to False in a production environment.
  *
  * @returns: A `ZepbenTokenFetcher` if the server reported authentication was configured, otherwise None.
  */
 fun createTokenFetcher(
     confAddress: String,
-    verifyCertificates: Boolean,
     authTypeField: String = "authType",
     audienceField: String = "audience",
     issuerDomainField: String = "issuer",
+    verifyCertificates: Boolean
 ) = createTokenFetcher(
     confAddress,
     authTypeField,
@@ -305,20 +305,20 @@ fun createTokenFetcher(
  */
 fun createTokenFetcher(
     confAddress: String,
-    confCAFilename: String,
-    authCAFilename: String,
     authTypeField: String = "authType",
     audienceField: String = "audience",
     issuerDomainField: String = "issuer",
+    confCAFilename: String? = null,
+    authCAFilename: String? = null,
 ) = createTokenFetcher(
     confAddress,
     authTypeField,
     audienceField,
     issuerDomainField,
-    confClient = HttpClient.newBuilder().sslContext(
-        SSLContextUtils.singleCACertSSLContext(confCAFilename)
-    ).build(),
-    authClient = HttpClient.newBuilder().sslContext(
-        SSLContextUtils.singleCACertSSLContext(authCAFilename)
-    ).build()
+    confClient = confCAFilename?.let {
+        HttpClient.newBuilder().sslContext(SSLContextUtils.singleCACertSSLContext(it)).build()
+    } ?: HttpClient.newHttpClient(),
+    authClient = authCAFilename?.let {
+        HttpClient.newBuilder().sslContext(SSLContextUtils.singleCACertSSLContext(it)).build()
+    } ?: HttpClient.newHttpClient(),
 )
