@@ -328,6 +328,19 @@ internal class ZepbenTokenFetcherTest {
     }
 
     @Test
+    fun testConstructorWithDefaultTls() {
+        doReturn(response).`when`(secureClient).send(any(), any<HttpResponse.BodyHandler<String>>())
+
+        doReturn(StatusCode.OK.code).`when`(response).statusCode()
+        doReturn("{\"access_token\":\"$TOKEN\", \"token_type\":\"Bearer\"}").`when`(response).body()
+
+        assertThat(
+            ZepbenTokenFetcher("audience", "issuerDomain", AuthMethod.AUTH0).fetchToken(),
+            equalTo("Bearer $TOKEN")
+        )
+    }
+
+    @Test
     fun testCreateTokenFetcherWithVerifyCertificatesOption() {
         mockkStatic("com.zepben.auth.client.ZepbenTokenFetcherKt")
         every {
@@ -343,21 +356,24 @@ internal class ZepbenTokenFetcherTest {
 
     @Test
     fun testCreateTokenFetcherWithCAFilenames() {
-        val customCASecureTokenFetcher = mock<ZepbenTokenFetcher>()
         mockkStatic("com.zepben.auth.client.ZepbenTokenFetcherKt")
         every {
             createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", secureConfClient, secureAuthClient)
-        } returns customCASecureTokenFetcher
-        every {
-            createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", secureClient, secureClient)
         } returns secureTokenFetcher
 
         assertThat(
             createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", "confCAFilename", "authCAFilename"),
-            equalTo(customCASecureTokenFetcher)
+            equalTo(secureTokenFetcher)
         )
+    }
 
-        // Default parameters should make HttpClients with system CAs
+    @Test
+    fun testCreateTokenFetcherWithDefaultTls() {
+        mockkStatic("com.zepben.auth.client.ZepbenTokenFetcherKt")
+        every {
+            createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", secureClient, secureClient)
+        } returns secureTokenFetcher
+
         assertThat(
             createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField"),
             equalTo(secureTokenFetcher)

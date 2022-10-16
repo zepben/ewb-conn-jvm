@@ -53,7 +53,7 @@ data class ZepbenTokenFetcher(
     val tokenPath: String = "/oauth/token",
     val tokenRequestData: JsonObject = JsonObject(),
     val refreshRequestData: JsonObject = JsonObject(),
-    private val client: HttpClient = HttpClient.newHttpClient(),
+    private val client: HttpClient,
     private var refreshToken: String? = null
 ) {
     private var accessToken: String? = null
@@ -80,8 +80,8 @@ data class ZepbenTokenFetcher(
         tokenPath: String = "/oauth/token",
         tokenRequestData: JsonObject = JsonObject(),
         refreshRequestData: JsonObject = JsonObject(),
-        verifyCertificate: Boolean,
-        refreshToken: String? = null
+        refreshToken: String? = null,
+        verifyCertificate: Boolean
     ) : this(
         audience, issuerDomain, authMethod, issuerProtocol, tokenPath, tokenRequestData, refreshRequestData,
         HttpClient.newBuilder()
@@ -112,13 +112,15 @@ data class ZepbenTokenFetcher(
         tokenPath: String = "/oauth/token",
         tokenRequestData: JsonObject = JsonObject(),
         refreshRequestData: JsonObject = JsonObject(),
-        caFilename: String,
-        refreshToken: String? = null
+        refreshToken: String? = null,
+        caFilename: String? = null
     ) : this(
         audience, issuerDomain, authMethod, issuerProtocol, tokenPath, tokenRequestData, refreshRequestData,
-        HttpClient.newBuilder()
-            .sslContext(SSLContextUtils.singleCACertSSLContext(caFilename))
-            .build(),
+        caFilename?.let {
+            HttpClient.newBuilder()
+                .sslContext(SSLContextUtils.singleCACertSSLContext(it))
+                .build()
+        } ?: HttpClient.newHttpClient(),
         refreshToken
     )
 
