@@ -18,12 +18,14 @@ package com.zepben.auth.client
 
 import com.zepben.auth.common.AuthException
 import com.zepben.auth.common.AuthMethod
+import com.zepben.auth.common.MultiAuthException
 import com.zepben.auth.common.StatusCode
 import com.zepben.testutils.auth.TOKEN
 import com.zepben.testutils.exception.ExpectException.expect
 import com.zepben.testutils.vertx.TestHttpServer
 import io.mockk.*
 import org.hamcrest.MatcherAssert.assertThat
+import org.hamcrest.Matchers.hasSize
 import org.hamcrest.core.IsEqual.equalTo
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -89,7 +91,7 @@ internal class ZepbenTokenFetcherTest {
             "{\"authType\": \"AUTH0\", \"audience\": \"test_audience\", \"issuer\": \"test_issuer\"}"
         ).`when`(response).body()
 
-        val tokenFetcher = createTokenFetcher("https://testaddress", confClient = client, authClient = client)
+        val tokenFetcher = createTokenFetcher("testaddress", confPath = "/auth", confClient = client, authClient = client)
         verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
         assertThat(tokenFetcher?.audience, equalTo("test_audience"))
         assertThat(tokenFetcher?.issuerDomain, equalTo("test_issuer"))
@@ -102,7 +104,7 @@ internal class ZepbenTokenFetcherTest {
             "{\"authType\": \"NONE\", \"audience\": \"\", \"issuer\": \"\"}"
         ).`when`(response).body()
 
-        val tokenFetcher = createTokenFetcher("https://testaddress", confClient = client, authClient = client)
+        val tokenFetcher = createTokenFetcher("testaddress", confPath = "/auth", confClient = client, authClient = client)
         verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
         assertThat(tokenFetcher, equalTo(null))
     }
@@ -113,13 +115,17 @@ internal class ZepbenTokenFetcherTest {
         doReturn("Not found").`when`(response).body()
 
         expect {
-            createTokenFetcher("https://testaddress", confClient = client, authClient = client)
-        }.toThrow(AuthException::class.java)
-            .withMessage("https://testaddress responded with error: 404 - Not found")
+            createTokenFetcher("testaddress", confPath = "/auth", confClient = client, authClient = client)
+        }.toThrow(MultiAuthException::class.java)
+            .withMessage(
+                "Could not retrieve authentication configuration. Errors from attempted GET requests:\n" +
+                    "\thttps://testaddress:443/auth responded with error: 404 - Not found"
+            )
             .exception()
             .apply {
                 verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
-                assertThat(statusCode, equalTo(StatusCode.NOT_FOUND.code))
+                assertThat(authExceptions, hasSize(1))
+                assertThat(authExceptions[0].statusCode, equalTo(StatusCode.NOT_FOUND.code))
             }
     }
 
@@ -129,13 +135,17 @@ internal class ZepbenTokenFetcherTest {
         doReturn("test text").`when`(response).body()
 
         expect {
-            createTokenFetcher("https://testaddress", confClient = client, authClient = client)
-        }.toThrow(AuthException::class.java)
-            .withMessage("Expected JSON response from https://testaddress, but got: test text.")
+            createTokenFetcher("testaddress", confPath = "/auth", confClient = client, authClient = client)
+        }.toThrow(MultiAuthException::class.java)
+            .withMessage(
+                "Could not retrieve authentication configuration. Errors from attempted GET requests:\n" +
+                    "\tExpected JSON response from https://testaddress:443/auth, but got: test text."
+            )
             .exception()
             .apply {
                 verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
-                assertThat(statusCode, equalTo(StatusCode.OK.code))
+                assertThat(authExceptions, hasSize(1))
+                assertThat(authExceptions[0].statusCode, equalTo(StatusCode.OK.code))
             }
     }
 
@@ -145,13 +155,17 @@ internal class ZepbenTokenFetcherTest {
         doReturn("[\"authType\"]").`when`(response).body()
 
         expect {
-            createTokenFetcher("https://testaddress", confClient = client, authClient = client)
-        }.toThrow(AuthException::class.java)
-            .withMessage("Expected JSON object from https://testaddress, but got: [\"authType\"].")
+            createTokenFetcher("testaddress", confPath = "/auth", confClient = client, authClient = client)
+        }.toThrow(MultiAuthException::class.java)
+            .withMessage(
+                "Could not retrieve authentication configuration. Errors from attempted GET requests:\n" +
+                "\tExpected JSON object from https://testaddress:443/auth, but got: [\"authType\"]."
+            )
             .exception()
             .apply {
                 verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
-                assertThat(statusCode, equalTo(StatusCode.OK.code))
+                assertThat(authExceptions, hasSize(1))
+                assertThat(authExceptions[0].statusCode, equalTo(StatusCode.OK.code))
             }
     }
 
@@ -344,25 +358,25 @@ internal class ZepbenTokenFetcherTest {
     fun testCreateTokenFetcherWithVerifyCertificatesOption() {
         mockkStatic("com.zepben.auth.client.ZepbenTokenFetcherKt")
         every {
-            createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", secureClient, secureClient)
+            createTokenFetcher("confHost", 1234, "confPath", "authTypeField", "audienceField", "issuerDomainField", secureClient, secureClient)
         } returns secureTokenFetcher
         every {
-            createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", insecureClient, insecureClient)
+            createTokenFetcher("confHost", 1234, "confPath","authTypeField", "audienceField", "issuerDomainField", insecureClient, insecureClient)
         } returns insecureTokenFetcher
 
-        assertThat(createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", true), equalTo(secureTokenFetcher))
-        assertThat(createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", false), equalTo(insecureTokenFetcher))
+        assertThat(createTokenFetcher("confHost", 1234, "confPath", "authTypeField", "audienceField", "issuerDomainField", true), equalTo(secureTokenFetcher))
+        assertThat(createTokenFetcher("confHost", 1234, "confPath", "authTypeField", "audienceField", "issuerDomainField", false), equalTo(insecureTokenFetcher))
     }
 
     @Test
     fun testCreateTokenFetcherWithCAFilenames() {
         mockkStatic("com.zepben.auth.client.ZepbenTokenFetcherKt")
         every {
-            createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", secureConfClient, secureAuthClient)
+            createTokenFetcher("confHost", 1234, "confPath", "authTypeField", "audienceField", "issuerDomainField", secureConfClient, secureAuthClient)
         } returns secureTokenFetcher
 
         assertThat(
-            createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", "confCAFilename", "authCAFilename"),
+            createTokenFetcher("confHost", 1234, "confPath", "authTypeField", "audienceField", "issuerDomainField", "confCAFilename", "authCAFilename"),
             equalTo(secureTokenFetcher)
         )
     }
@@ -371,11 +385,11 @@ internal class ZepbenTokenFetcherTest {
     fun testCreateTokenFetcherWithDefaultTls() {
         mockkStatic("com.zepben.auth.client.ZepbenTokenFetcherKt")
         every {
-            createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", secureClient, secureClient)
+            createTokenFetcher("confHost", 1234, "confPath", "authTypeField", "audienceField", "issuerDomainField", secureClient, secureClient)
         } returns secureTokenFetcher
 
         assertThat(
-            createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField"),
+            createTokenFetcher("confHost", 1234, "confPath", "authTypeField", "audienceField", "issuerDomainField"),
             equalTo(secureTokenFetcher)
         )
     }
