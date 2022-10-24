@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with zepben-auth.  If not, see <https://www.gnu.org/licenses/>.
 
+
 package com.zepben.auth.client
 
 import com.auth0.jwt.JWT
 import com.zepben.auth.common.AuthException
 import com.zepben.auth.common.AuthMethod
-import com.zepben.auth.common.MultiAuthException
 import com.zepben.auth.common.StatusCode
 import io.vertx.core.json.DecodeException
 import java.net.URL
@@ -56,7 +56,6 @@ data class ZepbenTokenFetcher(
     private val client: HttpClient,
     private var refreshToken: String? = null
 ) {
-
     private var accessToken: String? = null
     private var tokenExpiry: Instant = Instant.MIN
     private var tokenType: String? = null
@@ -151,7 +150,7 @@ data class ZepbenTokenFetcher(
             if (tokenType.isNullOrEmpty() or accessToken.isNullOrEmpty()) {
                 throw Exception(
                     "Token couldn't be retrieved from ${URL(issuerProtocol, issuerDomain, tokenPath)} using " +
-                        "configuration $authMethod, audience: $audience, token issuer: $issuerDomain"
+                    "configuration $authMethod, audience: $audience, token issuer: $issuerDomain"
                 )
             }
         }
@@ -194,7 +193,7 @@ data class ZepbenTokenFetcher(
             throw AuthException(
                 response.statusCode(),
                 (data.getString("error") ?: "Access Token absent in token response") + " - " +
-                    (data.getString("error_description") ?: "Response was: $data")
+                (data.getString("error_description") ?: "Response was: $data")
             )
         }
 
@@ -208,13 +207,11 @@ data class ZepbenTokenFetcher(
     }
 }
 
+
 /**
  * Helper method to fetch auth related configuration from `confAddress` and create a `ZepbenTokenFetcher`
  *
- * @param confHost Domain hosting authentication configuration.
- * @param confPort Port hosting authentication configuration. `confHost`:`confPort` must be an HTTPS server.
- * @param confPath Path to retrieve authentication configuration from. This must return a JSON response on a GET request. Defaults to checking /auth and
-/ewb/auth.
+ * @param confAddress Location to retrieve authentication configuration from. Must be a HTTP address that returns a JSON response.
  * @param authTypeField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
  * @param audienceField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
  * @param issuerDomainField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
@@ -224,70 +221,51 @@ data class ZepbenTokenFetcher(
  * @returns: A `ZepbenTokenFetcher` if the server reported authentication was configured, otherwise None.
  */
 fun createTokenFetcher(
-    confHost: String,
-    confPort: Int = 443,
-    confPath: String? = null,
+    confAddress: String,
     authTypeField: String = "authType",
     audienceField: String = "audience",
     issuerDomainField: String = "issuer",
     confClient: HttpClient,
     authClient: HttpClient
 ): ZepbenTokenFetcher? {
-    val confPaths = confPath?.let { listOf(confPath) } ?: listOf("/auth", "/ewb/auth")
-    val confFetchErrors = mutableListOf<AuthException>()
-    confPaths.forEach { cPath ->
-        val confAddress = "https://$confHost:$confPort$cPath"
-        val request = HttpRequest.newBuilder().uri(URI(confAddress)).GET().build()
-        val response = confClient.send(request, HttpResponse.BodyHandlers.ofString())
-        if (response.statusCode() == StatusCode.OK.code) {
-            try {
-                val authConfigJson = Json.decodeValue(response.body()) as JsonObject
-                val authMethod = AuthMethod.valueOf(authConfigJson.getString(authTypeField))
-                if (authMethod != AuthMethod.NONE) {
-                    return ZepbenTokenFetcher(
-                        authConfigJson.getString(audienceField),
-                        authConfigJson.getString(issuerDomainField),
-                        authMethod,
-                        client = authClient
-                    )
-                } else {
-                    return null
-                }
-            } catch (e: DecodeException) {
-                confFetchErrors.add(
-                    AuthException(
-                        response.statusCode(),
-                        "Expected JSON response from $confAddress, but got: ${response.body()}."
-                    )
-                )
-            } catch (e: ClassCastException) {
-                confFetchErrors.add(
-                    AuthException(
-                        response.statusCode(),
-                        "Expected JSON object from $confAddress, but got: ${response.body()}."
-                    )
+    val request = HttpRequest.newBuilder().uri(URI(confAddress)).GET().build()
+    val response = confClient.send(request, HttpResponse.BodyHandlers.ofString())
+    if (response.statusCode() == StatusCode.OK.code) {
+        try {
+            val authConfigJson = Json.decodeValue(response.body()) as JsonObject
+            val authMethod = AuthMethod.valueOf(authConfigJson.getString(authTypeField))
+            if (authMethod != AuthMethod.NONE) {
+                return ZepbenTokenFetcher(
+                    authConfigJson.getString(audienceField),
+                    authConfigJson.getString(issuerDomainField),
+                    authMethod,
+                    client = authClient
                 )
             }
-        } else {
-            confFetchErrors.add(
-                AuthException(
-                    response.statusCode(),
-                    "$confAddress responded with error: ${response.statusCode()} - ${response.body()}"
-                )
+        } catch (e: DecodeException) {
+            throw AuthException(
+                response.statusCode(),
+                "Expected JSON response from $confAddress, but got: ${response.body()}."
+            )
+        } catch (e: ClassCastException) {
+            throw AuthException(
+                response.statusCode(),
+                "Expected JSON object from $confAddress, but got: ${response.body()}."
             )
         }
+    } else {
+        throw AuthException(
+            response.statusCode(),
+            "$confAddress responded with error: ${response.statusCode()} - ${response.body()}"
+        )
     }
-
-    throw MultiAuthException("Could not retrieve authentication configuration. Errors from attempted GET requests:", confFetchErrors)
+    return null
 }
 
 /**
  * Helper method to fetch auth related configuration from `confAddress` and create a `ZepbenTokenFetcher`
  *
- * @param confHost Domain hosting authentication configuration.
- * @param confPort Port hosting authentication configuration. `confHost`:`confPort` must be an HTTPS server.
- * @param confPath Path to retrieve authentication configuration from. This must return a JSON response on a GET request. Defaults to checking /auth and
-                   /ewb/auth.
+ * @param confAddress Location to retrieve authentication configuration from. Must be a HTTP address that returns a JSON response.
  * @param authTypeField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
  * @param audienceField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
  * @param issuerDomainField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
@@ -297,17 +275,13 @@ fun createTokenFetcher(
  * @returns: A `ZepbenTokenFetcher` if the server reported authentication was configured, otherwise None.
  */
 fun createTokenFetcher(
-    confHost: String,
-    confPort: Int = 443,
-    confPath: String? = null,
+    confAddress: String,
     authTypeField: String = "authType",
     audienceField: String = "audience",
     issuerDomainField: String = "issuer",
     verifyCertificates: Boolean
 ) = createTokenFetcher(
-    confHost,
-    confPort,
-    confPath,
+    confAddress,
     authTypeField,
     audienceField,
     issuerDomainField,
@@ -322,10 +296,7 @@ fun createTokenFetcher(
 /**
  * Helper method to fetch auth related configuration from `confAddress` and create a `ZepbenTokenFetcher`
  *
- * @param confHost Domain hosting authentication configuration.
- * @param confPort Port hosting authentication configuration. `confHost`:`confPort` must be an HTTPS server.
- * @param confPath Path to retrieve authentication configuration from. This must return a JSON response on a GET request. Defaults to checking /auth and
-                   /ewb/auth.
+ * @param confAddress Location to retrieve authentication configuration from. Must be a HTTP address that returns a JSON response.
  * @param confCAFilename Filename of X.509 CA certificate used to verify HTTPS responses from configuration service. Leave as null to use system CAs.
  * @param authCAFilename Filename of X.509 CA certificate used to verify HTTPS responses from token service. Leave as null to use system CAs.
  * @param authTypeField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
@@ -335,18 +306,14 @@ fun createTokenFetcher(
  * @returns: A `ZepbenTokenFetcher` if the server reported authentication was configured, otherwise None.
  */
 fun createTokenFetcher(
-    confHost: String,
-    confPort: Int = 443,
-    confPath: String? = null,
+    confAddress: String,
     authTypeField: String = "authType",
     audienceField: String = "audience",
     issuerDomainField: String = "issuer",
     confCAFilename: String? = null,
     authCAFilename: String? = null,
 ) = createTokenFetcher(
-    confHost,
-    confPort,
-    confPath,
+    confAddress,
     authTypeField,
     audienceField,
     issuerDomainField,
