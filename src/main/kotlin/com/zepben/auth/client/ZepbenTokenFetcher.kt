@@ -53,7 +53,7 @@ data class ZepbenTokenFetcher(
     val tokenPath: String = "/oauth/token",
     val tokenRequestData: JsonObject = JsonObject(),
     val refreshRequestData: JsonObject = JsonObject(),
-    private val client: HttpClient,
+    private val client: HttpClient = HttpClient.newHttpClient(),
     private var refreshToken: String? = null
 ) {
     private var accessToken: String? = null
@@ -61,10 +61,12 @@ data class ZepbenTokenFetcher(
     private var tokenType: String? = null
 
     /**
+     * Create a ZepbenTokenFetcher with the option of turning off certificate verification for the token provider.
+     *
      * @property audience Audience to use when requesting tokens.
      * @property issuerDomain The domain of the token issuer.
      * @property authMethod The authentication method used by the server.
-     * @property verifyCertificate Whether to verify the SSL certificate when making requests.
+     * @property verifyCertificate Whether to verify the SSL certificate of the token provider when making requests.
      * @property issuerProtocol Protocol of the token issuer. You should not change this unless you are absolutely sure of
      *                          what you are doing. Setting it to anything other than https is a major security risk as
      *                          tokens will be sent in the clear.
@@ -76,23 +78,21 @@ data class ZepbenTokenFetcher(
         audience: String,
         issuerDomain: String,
         authMethod: AuthMethod,
+        verifyCertificate: Boolean,
         issuerProtocol: String = "https",
         tokenPath: String = "/oauth/token",
         tokenRequestData: JsonObject = JsonObject(),
         refreshRequestData: JsonObject = JsonObject(),
-        refreshToken: String? = null,
-        verifyCertificate: Boolean
+        refreshToken: String? = null
     ) : this(
         audience, issuerDomain, authMethod, issuerProtocol, tokenPath, tokenRequestData, refreshRequestData,
-        HttpClient.newBuilder()
-            .sslContext(
-                if (verifyCertificate) SSLContext.getDefault() else SSLContextUtils.allTrustingSSLContext()
-            )
-            .build(),
+        if (verifyCertificate) HttpClient.newHttpClient() else HttpClient.newBuilder().sslContext(SSLContextUtils.allTrustingSSLContext()).build(),
         refreshToken
     )
 
     /**
+     * Create a ZepbenTokenFetcher that uses a given CA to verify the token provider.
+     *
      * @property audience Audience to use when requesting tokens.
      * @property issuerDomain The domain of the token issuer.
      * @property authMethod The authentication method used by the server.
@@ -108,19 +108,17 @@ data class ZepbenTokenFetcher(
         audience: String,
         issuerDomain: String,
         authMethod: AuthMethod,
+        caFilename: String,
         issuerProtocol: String = "https",
         tokenPath: String = "/oauth/token",
         tokenRequestData: JsonObject = JsonObject(),
         refreshRequestData: JsonObject = JsonObject(),
         refreshToken: String? = null,
-        caFilename: String? = null
     ) : this(
         audience, issuerDomain, authMethod, issuerProtocol, tokenPath, tokenRequestData, refreshRequestData,
-        caFilename?.let {
-            HttpClient.newBuilder()
-                .sslContext(SSLContextUtils.singleCACertSSLContext(it))
-                .build()
-        } ?: HttpClient.newHttpClient(),
+        HttpClient.newBuilder()
+            .sslContext(SSLContextUtils.singleCACertSSLContext(caFilename))
+            .build(),
         refreshToken
     )
 
@@ -285,12 +283,8 @@ fun createTokenFetcher(
     authTypeField,
     audienceField,
     issuerDomainField,
-    confClient = HttpClient.newBuilder().sslContext(
-        if (verifyCertificates) SSLContext.getDefault() else SSLContextUtils.allTrustingSSLContext()
-    ).build(),
-    authClient = HttpClient.newBuilder().sslContext(
-        if (verifyCertificates) SSLContext.getDefault() else SSLContextUtils.allTrustingSSLContext()
-    ).build()
+    confClient = if (verifyCertificates) HttpClient.newHttpClient() else HttpClient.newBuilder().sslContext(SSLContextUtils.allTrustingSSLContext()).build(),
+    authClient = if (verifyCertificates) HttpClient.newHttpClient() else HttpClient.newBuilder().sslContext(SSLContextUtils.allTrustingSSLContext()).build()
 )
 
 /**

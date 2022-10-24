@@ -60,9 +60,6 @@ internal class ZepbenTokenFetcherTest {
         port = server.listen()
         doReturn(response).`when`(client).send(any(), any<HttpResponse.BodyHandler<String>>())
 
-        mockkStatic(SSLContext::class)
-        every { SSLContext.getDefault() } returns secureSSLContext
-
         mockkObject(SSLContextUtils)
         every { SSLContextUtils.allTrustingSSLContext() } returns insecureSSLContext
         every { SSLContextUtils.singleCACertSSLContext("confCAFilename") } returns secureConfSSLContext
@@ -70,7 +67,6 @@ internal class ZepbenTokenFetcherTest {
 
         mockkStatic(HttpClient::class)
         every { HttpClient.newHttpClient() } returns secureClient
-        every { HttpClient.newBuilder().sslContext(secureSSLContext).build() } returns secureClient
         every { HttpClient.newBuilder().sslContext(insecureSSLContext).build() } returns insecureClient
         every { HttpClient.newBuilder().sslContext(secureConfSSLContext).build() } returns secureConfClient
         every { HttpClient.newBuilder().sslContext(secureAuthSSLContext).build() } returns secureAuthClient
