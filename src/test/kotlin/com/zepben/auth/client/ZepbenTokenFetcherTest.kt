@@ -340,25 +340,25 @@ internal class ZepbenTokenFetcherTest {
     fun testCreateTokenFetcherWithVerifyCertificatesOption() {
         mockkStatic("com.zepben.auth.client.ZepbenTokenFetcherKt")
         every {
-            createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", secureClient, secureClient)
+            createTokenFetcher("confAddress", secureClient, secureClient, "authTypeField", "audienceField", "issuerDomainField")
         } returns secureTokenFetcher
         every {
-            createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", insecureClient, insecureClient)
+            createTokenFetcher("confAddress", insecureClient, insecureClient, "authTypeField", "audienceField", "issuerDomainField")
         } returns insecureTokenFetcher
 
-        assertThat(createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", true), equalTo(secureTokenFetcher))
-        assertThat(createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", false), equalTo(insecureTokenFetcher))
+        assertThat(createTokenFetcher("confAddress", true, "authTypeField", "audienceField", "issuerDomainField"), equalTo(secureTokenFetcher))
+        assertThat(createTokenFetcher("confAddress", false, "authTypeField", "audienceField", "issuerDomainField"), equalTo(insecureTokenFetcher))
     }
 
     @Test
     fun testCreateTokenFetcherWithCAFilenames() {
         mockkStatic("com.zepben.auth.client.ZepbenTokenFetcherKt")
         every {
-            createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", secureConfClient, secureAuthClient)
+            createTokenFetcher("confAddress", secureConfClient, secureAuthClient, "authTypeField", "audienceField", "issuerDomainField")
         } returns secureTokenFetcher
 
         assertThat(
-            createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", "confCAFilename", "authCAFilename"),
+            createTokenFetcher("confAddress", "confCAFilename", "authCAFilename", "authTypeField", "audienceField", "issuerDomainField"),
             equalTo(secureTokenFetcher)
         )
     }
@@ -367,11 +367,11 @@ internal class ZepbenTokenFetcherTest {
     fun testCreateTokenFetcherWithDefaultTls() {
         mockkStatic("com.zepben.auth.client.ZepbenTokenFetcherKt")
         every {
-            createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField", secureClient, secureClient)
+            createTokenFetcher("confAddress", secureClient, secureClient, "authTypeField", "audienceField", "issuerDomainField")
         } returns secureTokenFetcher
 
         assertThat(
-            createTokenFetcher("confAddress", "authTypeField", "audienceField", "issuerDomainField"),
+            createTokenFetcher("confAddress", authTypeField="authTypeField", audienceField="audienceField", issuerDomainField="issuerDomainField"),
             equalTo(secureTokenFetcher)
         )
     }
