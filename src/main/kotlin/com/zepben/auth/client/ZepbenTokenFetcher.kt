@@ -34,6 +34,8 @@ import javax.net.ssl.SSLContext
 import kotlin.Exception
 
 /**
+ * Fetches access tokens from an authentication provider using the OAuth 2.0 protocol.
+ *
  * @property audience Audience to use when requesting tokens.
  * @property issuerDomain The domain of the token issuer.
  * @property authMethod The authentication method used by the server.
@@ -210,7 +212,8 @@ data class ZepbenTokenFetcher(
 
 
 /**
- * Helper method to fetch auth related configuration from `confAddress` and create a `ZepbenTokenFetcher`
+ * Helper method to fetch auth related configuration from `confAddress` and create a `ZepbenTokenFetcher`.
+ * You must specify the `HttpClient`s used for fetching the authentication configuration, and to fetch the access tokens.
  *
  * @param confAddress Location to retrieve authentication configuration from. Must be a HTTP address that returns a JSON response.
  * @param confClient HTTP client used to retrieve authentication configuration.
@@ -264,7 +267,9 @@ fun createTokenFetcher(
 }
 
 /**
- * Helper method to fetch auth related configuration from `confAddress` and create a `ZepbenTokenFetcher`
+ * Helper method to fetch auth related configuration from `confAddress` and create a `ZepbenTokenFetcher`.
+ * You may use `verififyCertificates` to specify whether to verify the certificates for the domains serving the
+ * authentication configuration and the authentication provider.
  *
  * @param confAddress Location to retrieve authentication configuration from. Must be a HTTP address that returns a JSON response.
  * @param verifyCertificates: Whether to verify the certificate when making HTTPS requests. Note you should only use a trusted server
@@ -291,7 +296,9 @@ fun createTokenFetcher(
 )
 
 /**
- * Helper method to fetch auth related configuration from `confAddress` and create a `ZepbenTokenFetcher`
+ * Helper method to fetch auth related configuration from `confAddress` and create a `ZepbenTokenFetcher`.
+ * You may use `confCAFilename` and `authCAFilename` to specify the CAs used to verify the certificates for the domains serving the
+ * authentication configuration and the authentication provider.
  *
  * @param confAddress Location to retrieve authentication configuration from. Must be a HTTP address that returns a JSON response.
  * @param confCAFilename Filename of X.509 CA certificate used to verify HTTPS responses from configuration service. Leave as null to use system CAs.
