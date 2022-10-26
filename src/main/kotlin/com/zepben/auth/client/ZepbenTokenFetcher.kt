@@ -157,7 +157,10 @@ data class ZepbenTokenFetcher(
     }
 
     private fun fetchTokenAuth0(useRefresh: Boolean = false) {
-        val body = if (useRefresh) refreshRequestData.toString() else tokenRequestData.toString()
+        val body = if (useRefresh) {
+            refreshRequestData.put("refresh_token", refreshToken)
+            refreshRequestData.toString()
+        } else tokenRequestData.toString()
         val request = HttpRequest.newBuilder()
             .uri(URL(issuerProtocol, issuerDomain, tokenPath).toURI())
             .header("content-type", "application/json")
