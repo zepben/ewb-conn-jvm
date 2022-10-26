@@ -110,7 +110,7 @@ data class ZepbenTokenFetcher(
         audience: String,
         issuerDomain: String,
         authMethod: AuthMethod,
-        caFilename: String,
+        caFilename: String?,
         issuerProtocol: String = "https",
         tokenPath: String = "/oauth/token",
         tokenRequestData: JsonObject = JsonObject(),
@@ -118,9 +118,9 @@ data class ZepbenTokenFetcher(
         refreshToken: String? = null,
     ) : this(
         audience, issuerDomain, authMethod, issuerProtocol, tokenPath, tokenRequestData, refreshRequestData,
-        HttpClient.newBuilder()
-            .sslContext(SSLContextUtils.singleCACertSSLContext(caFilename))
-            .build(),
+        caFilename?.let {
+            HttpClient.newBuilder().sslContext(SSLContextUtils.singleCACertSSLContext(caFilename)).build()
+        } ?: HttpClient.newHttpClient(),
         refreshToken
     )
 
