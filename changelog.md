@@ -17,7 +17,7 @@
 * None.
 
 ##### Fixes
-* None.
+* Refresh token is now used in token refresh requests.
 
 ##### Notes
 * None.
