@@ -31,6 +31,8 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.*
 import org.mockito.kotlin.mock
 import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpRequest.BodyPublishers
 import java.net.http.HttpResponse
 import javax.net.ssl.SSLContext
 
@@ -277,19 +279,23 @@ internal class ZepbenTokenFetcherTest {
             "{\"access_token\":\"$TOKEN\", \"refresh_token\": \"test_refresh_token\", \"token_type\":\"Bearer\"}"
         ).`when`(response).body()
 
-        val tokenFetcher = ZepbenTokenFetcher(
-            audience = "test_audience",
-            issuerDomain = "testissuer.com.au",
-            authMethod = AuthMethod.AUTH0,
-            issuerProtocol = "https",
-            tokenPath = "/fake/path",
-            client = client,
-            refreshToken = "test_refresh_token"
-        )
-        verify(client, never()).send(any(), any<HttpResponse.BodyHandler<String>>())
-        val token = tokenFetcher.fetchToken()
-        verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
-        assertThat(token, equalTo("Bearer $TOKEN"))
+        mockStatic(BodyPublishers::class.java, CALLS_REAL_METHODS).use { bodyPublishers ->
+            val tokenFetcher = ZepbenTokenFetcher(
+                audience = "test_audience",
+                issuerDomain = "testissuer.com.au",
+                authMethod = AuthMethod.AUTH0,
+                issuerProtocol = "https",
+                tokenPath = "/fake/path",
+                client = client,
+                refreshToken = "test_refresh_token"
+            )
+            verify(client, never()).send(any(), any<HttpResponse.BodyHandler<String>>())
+            val token = tokenFetcher.fetchToken()
+            verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
+            bodyPublishers.verify { BodyPublishers.ofString(matches("\"refresh_token\"\\s*:\\s*\"test_refresh_token\"")) }
+            assertThat(token, equalTo("Bearer $TOKEN"))
+        }
+
     }
 
     @Test
