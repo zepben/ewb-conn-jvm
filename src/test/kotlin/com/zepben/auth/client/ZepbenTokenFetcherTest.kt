@@ -84,7 +84,7 @@ internal class ZepbenTokenFetcherTest {
     fun testCreateTokenFetcherSuccess() {
         doReturn(StatusCode.OK.code).`when`(response).statusCode()
         doReturn(
-            "{\"authType\": \"AUTH0\", \"audience\": \"test_audience\", \"issuer\": \"test_issuer\"}"
+            "{\"authType\": \"OAUTH\", \"audience\": \"test_audience\", \"issuer\": \"test_issuer\"}"
         ).`when`(response).body()
 
         val tokenFetcher = createTokenFetcher("https://testaddress", confClient = client, authClient = client)
@@ -161,7 +161,7 @@ internal class ZepbenTokenFetcherTest {
         val tokenFetcher = ZepbenTokenFetcher(
             audience = "test_audience",
             issuerDomain = "testissuer.com.au",
-            authMethod = AuthMethod.AUTH0,
+            authMethod = AuthMethod.OAUTH,
             issuerProtocol = "https",
             tokenPath = "/fake/path",
             client = client
@@ -180,7 +180,7 @@ internal class ZepbenTokenFetcherTest {
         val tokenFetcher = ZepbenTokenFetcher(
             audience = "test_audience",
             issuerDomain = "testissuer.com.au",
-            authMethod = AuthMethod.AUTH0,
+            authMethod = AuthMethod.OAUTH,
             issuerProtocol = "https",
             tokenPath = "/fake/path",
             client = client
@@ -205,7 +205,7 @@ internal class ZepbenTokenFetcherTest {
         val tokenFetcher = ZepbenTokenFetcher(
             audience = "test_audience",
             issuerDomain = "testissuer.com.au",
-            authMethod = AuthMethod.AUTH0,
+            authMethod = AuthMethod.OAUTH,
             issuerProtocol = "https",
             tokenPath = "/fake/path",
             client = client
@@ -230,7 +230,7 @@ internal class ZepbenTokenFetcherTest {
         val tokenFetcher = ZepbenTokenFetcher(
             audience = "test_audience",
             issuerDomain = "testissuer.com.au",
-            authMethod = AuthMethod.AUTH0,
+            authMethod = AuthMethod.OAUTH,
             issuerProtocol = "https",
             tokenPath = "/fake/path",
             client = client
@@ -255,7 +255,7 @@ internal class ZepbenTokenFetcherTest {
         val tokenFetcher = ZepbenTokenFetcher(
             audience = "test_audience",
             issuerDomain = "testissuer.com.au",
-            authMethod = AuthMethod.AUTH0,
+            authMethod = AuthMethod.OAUTH,
             issuerProtocol = "https",
             tokenPath = "/fake/path",
             client = client
@@ -283,7 +283,7 @@ internal class ZepbenTokenFetcherTest {
             val tokenFetcher = ZepbenTokenFetcher(
                 audience = "test_audience",
                 issuerDomain = "testissuer.com.au",
-                authMethod = AuthMethod.AUTH0,
+                authMethod = AuthMethod.OAUTH,
                 issuerProtocol = "https",
                 tokenPath = "/fake/path",
                 client = client,
@@ -307,11 +307,11 @@ internal class ZepbenTokenFetcherTest {
         doReturn("{\"access_token\":\"$TOKEN\", \"token_type\":\"Bearer\"}").`when`(response).body()
 
         assertThat(
-            ZepbenTokenFetcher("audience", "issuerDomain", AuthMethod.AUTH0, verifyCertificate = true).fetchToken(),
+            ZepbenTokenFetcher("audience", "issuerDomain", AuthMethod.OAUTH, verifyCertificate = true).fetchToken(),
             equalTo("Bearer $TOKEN")
         )
         assertThat(
-            ZepbenTokenFetcher("audience", "issuerDomain", AuthMethod.AUTH0, verifyCertificate = false).fetchToken(),
+            ZepbenTokenFetcher("audience", "issuerDomain", AuthMethod.OAUTH, verifyCertificate = false).fetchToken(),
             equalTo("Bearer $TOKEN")
         )
     }
@@ -324,7 +324,7 @@ internal class ZepbenTokenFetcherTest {
         doReturn("{\"access_token\":\"$TOKEN\", \"token_type\":\"Bearer\"}").`when`(response).body()
 
         assertThat(
-            ZepbenTokenFetcher("audience", "issuerDomain", AuthMethod.AUTH0, caFilename = "authCAFilename").fetchToken(),
+            ZepbenTokenFetcher("audience", "issuerDomain", AuthMethod.OAUTH, caFilename = "authCAFilename").fetchToken(),
             equalTo("Bearer $TOKEN")
         )
     }
@@ -337,7 +337,7 @@ internal class ZepbenTokenFetcherTest {
         doReturn("{\"access_token\":\"$TOKEN\", \"token_type\":\"Bearer\"}").`when`(response).body()
 
         assertThat(
-            ZepbenTokenFetcher("audience", "issuerDomain", AuthMethod.AUTH0).fetchToken(),
+            ZepbenTokenFetcher("audience", "issuerDomain", AuthMethod.OAUTH).fetchToken(),
             equalTo("Bearer $TOKEN")
         )
     }
