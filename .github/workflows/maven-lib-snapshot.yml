@@ -12,5 +12,5 @@ jobs:
     uses: zepben/.github/.github/workflows/maven-lib-snapshot.yml@main
     with:
       private: false
-      license_check: true
+      licencecheck: true
     secrets: inherit
