@@ -1,3 +1,4 @@
+## [0.5.0]
 ##### Breaking Changes
 * There are 3 ways of specifying trusted TLS/SSL certificates when constructing a `ZepbenTokenFetcher`:
   * Directly specify the `HttpClient` via the `client` parameter
