@@ -34,41 +34,95 @@ import javax.net.ssl.SSLContext
 import kotlin.Exception
 
 /**
+ * Fetches access tokens from an authentication provider using the OAuth 2.0 protocol.
+ *
  * @property audience Audience to use when requesting tokens.
  * @property issuerDomain The domain of the token issuer.
  * @property authMethod The authentication method used by the server.
- * @property verifyCertificate Whether to verify the SSL certificate when making requests.
  * @property issuerProtocol Protocol of the token issuer. You should not change this unless you are absolutely sure of
  *                          what you are doing. Setting it to anything other than https is a major security risk as
  *                          tokens will be sent in the clear.
  * @property tokenPath Path for requesting token from `issuer_domain`.
  * @property tokenRequestData Data to pass in token requests.
  * @property refreshRequestData Data to pass in refresh token requests.
- * @property caFilename Filename of X.509 CA certificate used to verify HTTPS responses from token service. Leave as null to use system CAs.
+ * @property client HTTP client used to retrieve tokens. Defaults to HttpClient.newHttpClient().
  */
 data class ZepbenTokenFetcher(
     val audience: String,
     val issuerDomain: String,
     val authMethod: AuthMethod,
-    val verifyCertificate: Boolean = false,
     val issuerProtocol: String = "https",
     val tokenPath: String = "/oauth/token",
     val tokenRequestData: JsonObject = JsonObject(),
     val refreshRequestData: JsonObject = JsonObject(),
-    val caFilename: String? = null,
-    private val client: HttpClient = HttpClient.newBuilder()
-        .sslContext(
-            if (verifyCertificate)
-                if (caFilename != null) SSLContextUtils.singleCACertSSLContext(caFilename) else SSLContext.getDefault()
-            else
-                SSLContextUtils.allTrustingSSLContext()
-        )
-        .build(),
+    private val client: HttpClient = HttpClient.newHttpClient(),
     private var refreshToken: String? = null
 ) {
     private var accessToken: String? = null
     private var tokenExpiry: Instant = Instant.MIN
     private var tokenType: String? = null
+
+    /**
+     * Create a ZepbenTokenFetcher with the option of turning off certificate verification for the token provider.
+     *
+     * @property audience Audience to use when requesting tokens.
+     * @property issuerDomain The domain of the token issuer.
+     * @property authMethod The authentication method used by the server.
+     * @property verifyCertificate Whether to verify the SSL certificate of the token provider when making requests.
+     * @property issuerProtocol Protocol of the token issuer. You should not change this unless you are absolutely sure of
+     *                          what you are doing. Setting it to anything other than https is a major security risk as
+     *                          tokens will be sent in the clear.
+     * @property tokenPath Path for requesting token from `issuer_domain`.
+     * @property tokenRequestData Data to pass in token requests.
+     * @property refreshRequestData Data to pass in refresh token requests.
+     */
+    constructor(
+        audience: String,
+        issuerDomain: String,
+        authMethod: AuthMethod,
+        verifyCertificate: Boolean,
+        issuerProtocol: String = "https",
+        tokenPath: String = "/oauth/token",
+        tokenRequestData: JsonObject = JsonObject(),
+        refreshRequestData: JsonObject = JsonObject(),
+        refreshToken: String? = null
+    ) : this(
+        audience, issuerDomain, authMethod, issuerProtocol, tokenPath, tokenRequestData, refreshRequestData,
+        if (verifyCertificate) HttpClient.newHttpClient() else HttpClient.newBuilder().sslContext(SSLContextUtils.allTrustingSSLContext()).build(),
+        refreshToken
+    )
+
+    /**
+     * Create a ZepbenTokenFetcher that uses a given CA to verify the token provider.
+     *
+     * @property audience Audience to use when requesting tokens.
+     * @property issuerDomain The domain of the token issuer.
+     * @property authMethod The authentication method used by the server.
+     * @property caFilename Filename of X.509 CA certificate used to verify HTTPS responses from token service.
+     * @property issuerProtocol Protocol of the token issuer. You should not change this unless you are absolutely sure of
+     *                          what you are doing. Setting it to anything other than https is a major security risk as
+     *                          tokens will be sent in the clear.
+     * @property tokenPath Path for requesting token from `issuer_domain`.
+     * @property tokenRequestData Data to pass in token requests.
+     * @property refreshRequestData Data to pass in refresh token requests.
+     */
+    constructor(
+        audience: String,
+        issuerDomain: String,
+        authMethod: AuthMethod,
+        caFilename: String?,
+        issuerProtocol: String = "https",
+        tokenPath: String = "/oauth/token",
+        tokenRequestData: JsonObject = JsonObject(),
+        refreshRequestData: JsonObject = JsonObject(),
+        refreshToken: String? = null,
+    ) : this(
+        audience, issuerDomain, authMethod, issuerProtocol, tokenPath, tokenRequestData, refreshRequestData,
+        caFilename?.let {
+            HttpClient.newBuilder().sslContext(SSLContextUtils.singleCACertSSLContext(caFilename)).build()
+        } ?: HttpClient.newHttpClient(),
+        refreshToken
+    )
 
     init {
         tokenRequestData.put("audience", audience)
@@ -105,10 +159,13 @@ data class ZepbenTokenFetcher(
     }
 
     private fun fetchTokenAuth0(useRefresh: Boolean = false) {
-        val body = if (useRefresh) refreshRequestData.toString() else tokenRequestData.toString()
+        val body = if (useRefresh) {
+            refreshRequestData.put("refresh_token", refreshToken)
+            refreshRequestData.toString()
+        } else tokenRequestData.toString()
         val request = HttpRequest.newBuilder()
             .uri(URL(issuerProtocol, issuerDomain, tokenPath).toURI())
-            .header("content-type", "application/x-www-form-urlencoded")
+            .header("content-type", "application/json")
             .POST(HttpRequest.BodyPublishers.ofString(body))
             .build()
         val response = client.send(request, HttpResponse.BodyHandlers.ofString())
@@ -155,44 +212,25 @@ data class ZepbenTokenFetcher(
 
 
 /**
- * Helper method to fetch auth related configuration from `confAddress` and create a `ZepbenTokenFetcher`
+ * Helper method to fetch auth related configuration from `confAddress` and create a `ZepbenTokenFetcher`.
+ * You must specify the `HttpClient`s used for fetching the authentication configuration, and to fetch the access tokens.
  *
  * @param confAddress Location to retrieve authentication configuration from. Must be a HTTP address that returns a JSON response.
- * @param verifyCertificates: Whether to verify the certificate when making HTTPS requests. Note you should only use a trusted server
- *                           and never set this to False in a production environment.
+ * @param confClient HTTP client used to retrieve authentication configuration.
+ * @param authClient HTTP client used to retrieve tokens.
  * @param authTypeField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
  * @param audienceField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
  * @param issuerDomainField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
- * @param client HTTP client used to retrieve authentication configuration. Generated from `verifyCertificate` by default.
- * @param confCAFilename Filename of X.509 CA certificate used to verify HTTPS responses from configuration service. Leave as null to use system CAs.
- * @param authCAFilename Filename of X.509 CA certificate used to verify HTTPS responses from token service. Leave as null to use system CAs.
  *
  * @returns: A `ZepbenTokenFetcher` if the server reported authentication was configured, otherwise None.
  */
 fun createTokenFetcher(
     confAddress: String,
-    verifyCertificates: Boolean = true,
+    confClient: HttpClient,
+    authClient: HttpClient,
     authTypeField: String = "authType",
     audienceField: String = "audience",
-    issuerDomainField: String = "issuer",
-    confCAFilename: String? = null,
-    authCAFilename: String? = null,
-    confClient: HttpClient = HttpClient.newBuilder()
-        .sslContext(
-            if (verifyCertificates)
-                if (confCAFilename != null) SSLContextUtils.singleCACertSSLContext(confCAFilename) else SSLContext.getDefault()
-            else
-                SSLContextUtils.allTrustingSSLContext()
-        )
-        .build(),
-    authClient: HttpClient = HttpClient.newBuilder()
-        .sslContext(
-            if (verifyCertificates)
-                if (authCAFilename != null) SSLContextUtils.singleCACertSSLContext(authCAFilename) else SSLContext.getDefault()
-            else
-                SSLContextUtils.allTrustingSSLContext()
-        )
-        .build()
+    issuerDomainField: String = "issuer"
 ): ZepbenTokenFetcher? {
     val request = HttpRequest.newBuilder().uri(URI(confAddress)).GET().build()
     val response = confClient.send(request, HttpResponse.BodyHandlers.ofString())
@@ -205,8 +243,6 @@ fun createTokenFetcher(
                     authConfigJson.getString(audienceField),
                     authConfigJson.getString(issuerDomainField),
                     authMethod,
-                    verifyCertificates,
-                    caFilename = authCAFilename,
                     client = authClient
                 )
             }
@@ -229,3 +265,66 @@ fun createTokenFetcher(
     }
     return null
 }
+
+/**
+ * Helper method to fetch auth related configuration from `confAddress` and create a `ZepbenTokenFetcher`.
+ * You may use `verififyCertificates` to specify whether to verify the certificates for the domains serving the
+ * authentication configuration and the authentication provider.
+ *
+ * @param confAddress Location to retrieve authentication configuration from. Must be a HTTP address that returns a JSON response.
+ * @param verifyCertificates: Whether to verify the certificate when making HTTPS requests. Note you should only use a trusted server
+ *                            and never set this to False in a production environment.
+ * @param authTypeField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
+ * @param audienceField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
+ * @param issuerDomainField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
+ *
+ * @returns: A `ZepbenTokenFetcher` if the server reported authentication was configured, otherwise None.
+ */
+fun createTokenFetcher(
+    confAddress: String,
+    verifyCertificates: Boolean,
+    authTypeField: String = "authType",
+    audienceField: String = "audience",
+    issuerDomainField: String = "issuer",
+) = createTokenFetcher(
+    confAddress,
+    if (verifyCertificates) HttpClient.newHttpClient() else HttpClient.newBuilder().sslContext(SSLContextUtils.allTrustingSSLContext()).build(),
+    if (verifyCertificates) HttpClient.newHttpClient() else HttpClient.newBuilder().sslContext(SSLContextUtils.allTrustingSSLContext()).build(),
+    authTypeField,
+    audienceField,
+    issuerDomainField,
+)
+
+/**
+ * Helper method to fetch auth related configuration from `confAddress` and create a `ZepbenTokenFetcher`.
+ * You may use `confCAFilename` and `authCAFilename` to specify the CAs used to verify the certificates for the domains serving the
+ * authentication configuration and the authentication provider.
+ *
+ * @param confAddress Location to retrieve authentication configuration from. Must be a HTTP address that returns a JSON response.
+ * @param confCAFilename Filename of X.509 CA certificate used to verify HTTPS responses from configuration service. Leave as null to use system CAs.
+ * @param authCAFilename Filename of X.509 CA certificate used to verify HTTPS responses from token service. Leave as null to use system CAs.
+ * @param authTypeField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
+ * @param audienceField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
+ * @param issuerDomainField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
+ *
+ * @returns: A `ZepbenTokenFetcher` if the server reported authentication was configured, otherwise None.
+ */
+fun createTokenFetcher(
+    confAddress: String,
+    confCAFilename: String? = null,
+    authCAFilename: String? = null,
+    authTypeField: String = "authType",
+    audienceField: String = "audience",
+    issuerDomainField: String = "issuer",
+) = createTokenFetcher(
+    confAddress,
+    confCAFilename?.let {
+        HttpClient.newBuilder().sslContext(SSLContextUtils.singleCACertSSLContext(it)).build()
+    } ?: HttpClient.newHttpClient(),
+    authCAFilename?.let {
+        HttpClient.newBuilder().sslContext(SSLContextUtils.singleCACertSSLContext(it)).build()
+    } ?: HttpClient.newHttpClient(),
+    authTypeField,
+    audienceField,
+    issuerDomainField,
+)
