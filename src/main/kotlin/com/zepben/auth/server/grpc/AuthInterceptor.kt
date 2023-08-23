@@ -47,7 +47,8 @@ data class GrpcAuthResp(val status: Status, val token: DecodedJWT? = null)
 
 class AuthInterceptor(
     private val tokenAuthenticator: TokenAuthenticator,
-    private val requiredScopes: Map<String, String>
+    private val requiredScopes: Map<String, String>,
+    private val permissionsKey: String = "permissions"
 ) : ServerInterceptor {
 
     override fun <ReqT, RespT> interceptCall(

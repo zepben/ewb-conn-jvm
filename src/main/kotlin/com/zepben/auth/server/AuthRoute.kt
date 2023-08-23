@@ -17,6 +17,7 @@
 
 package com.zepben.auth.server
 
+import com.auth0.jwk.UrlJwkProvider
 import com.zepben.auth.server.vertx.JWTAuthProvider
 import com.zepben.vertxutils.routing.Route
 import com.zepben.vertxutils.routing.RouteVersion
@@ -44,6 +45,7 @@ class AuthRoute {
         fun routeFactory(
             path: String,
             audience: String,
+            jwkProvider: UrlJwkProvider,
             issuer: String,
             requiredClaims: Iterable<String> = emptySet(),
             isRegexPath: Boolean = false
@@ -57,7 +59,7 @@ class AuthRoute {
                             .hasRegexPath(isRegexPath)
                             .addHandler(
                                 Auth0AuthHandler(
-                                    JWTAuthProvider(JWTAuthenticator(audience, issuer)),
+                                    JWTAuthProvider(JWTAuthenticator(audience, jwkProvider, issuer)),
                                     mutableSetOf<String>().apply { addAll(requiredClaims) }
                                 )
                             )

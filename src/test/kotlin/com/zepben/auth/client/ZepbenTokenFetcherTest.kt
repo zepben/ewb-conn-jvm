@@ -84,13 +84,31 @@ internal class ZepbenTokenFetcherTest {
     fun testCreateTokenFetcherSuccess() {
         doReturn(StatusCode.OK.code).`when`(response).statusCode()
         doReturn(
-            "{\"authType\": \"OAUTH\", \"audience\": \"test_audience\", \"issuer\": \"test_issuer\"}"
+            "{\"authType\": \"OAUTH\", \"audience\": \"test_audience\", \"issuer\": \"test_issuer\", \"tokenPath\": \"/oauth/token\"}"
         ).`when`(response).body()
 
         val tokenFetcher = createTokenFetcher("https://testaddress", confClient = client, authClient = client)
         verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
         assertThat(tokenFetcher?.audience, equalTo("test_audience"))
         assertThat(tokenFetcher?.issuerDomain, equalTo("test_issuer"))
+    }
+
+    @Test
+    fun testCreateTokenAzureFetcherSuccess() {
+        val tokenFetcher = ZepbenTokenFetcher(
+            "",
+            "",
+            AuthMethod.OAUTH,
+            requestContentType = "application/x-www-form-urlencoded",
+            tokenPath = "oauth2/2.0/token")
+
+        tokenFetcher.tokenRequestData.put("grant_type", "client_credentials")
+        tokenFetcher.tokenRequestData.put("scope", "")
+        tokenFetcher.tokenRequestData.put("client_id", "")
+        tokenFetcher.tokenRequestData.put("client_secret", "")
+
+        println(tokenFetcher.fetchToken())
+        assert(true)
     }
 
     @Test

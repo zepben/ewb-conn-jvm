@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with zepben-auth.  If not, see <https://www.gnu.org/licenses/>.
 
-
 package com.zepben.auth.server
 
 import com.auth0.jwk.Jwk
@@ -58,9 +57,8 @@ interface TokenAuthenticator {
  */
 open class JWTAuthenticator(
     private val audience: String,
-    private val issuerDomain: String,
-    private val jwkProvider: UrlJwkProvider = UrlJwkProvider(issuerDomain),
-    private val issuer: String = "https://${issuerDomain}/"
+    private val jwkProvider: UrlJwkProvider,
+    private val issuer: String
 ): TokenAuthenticator {
     private var keys: Map<String, Jwk> = refreshJwk()
 
@@ -69,7 +67,7 @@ open class JWTAuthenticator(
     private fun getKeyFromJwk(kid: String): Jwk =
         keys[kid] ?: run {
             refreshJwk()
-            keys[kid] ?: throw JwkException("Unable to find key $kid in ${issuerDomain}$WELL_KNOWN_JWKS_PATH")
+            keys[kid] ?: throw JwkException("Unable to find key $kid in jwk endpoint. Check your JWK URL.")
         }
 
     override fun authenticate(token: String?): AuthResponse =

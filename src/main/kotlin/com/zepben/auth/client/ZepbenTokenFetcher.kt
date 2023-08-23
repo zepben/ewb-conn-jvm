@@ -30,7 +30,6 @@ import java.time.Instant
 import io.vertx.core.json.Json
 import io.vertx.core.json.JsonObject
 import java.net.URI
-import javax.net.ssl.SSLContext
 import kotlin.Exception
 
 /**
@@ -42,6 +41,7 @@ import kotlin.Exception
  * @property issuerProtocol Protocol of the token issuer. You should not change this unless you are absolutely sure of
  *                          what you are doing. Setting it to anything other than https is a major security risk as
  *                          tokens will be sent in the clear.
+ * @property requestContentType  content type for the OAUTH2 request.
  * @property tokenPath Path for requesting token from `issuer_domain`.
  * @property tokenRequestData Data to pass in token requests.
  * @property refreshRequestData Data to pass in refresh token requests.
@@ -52,6 +52,7 @@ data class ZepbenTokenFetcher(
     val issuerDomain: String,
     val authMethod: AuthMethod,
     val issuerProtocol: String = "https",
+    val requestContentType: String = "application/json",
     val tokenPath: String = "/oauth/token",
     val tokenRequestData: JsonObject = JsonObject(),
     val refreshRequestData: JsonObject = JsonObject(),
@@ -72,6 +73,7 @@ data class ZepbenTokenFetcher(
      * @property issuerProtocol Protocol of the token issuer. You should not change this unless you are absolutely sure of
      *                          what you are doing. Setting it to anything other than https is a major security risk as
      *                          tokens will be sent in the clear.
+     * @property requestContentType  content type for the OAUTH2 request.
      * @property tokenPath Path for requesting token from `issuer_domain`.
      * @property tokenRequestData Data to pass in token requests.
      * @property refreshRequestData Data to pass in refresh token requests.
@@ -82,12 +84,13 @@ data class ZepbenTokenFetcher(
         authMethod: AuthMethod,
         verifyCertificate: Boolean,
         issuerProtocol: String = "https",
+        requestContentType: String = "application/json",
         tokenPath: String = "/oauth/token",
         tokenRequestData: JsonObject = JsonObject(),
         refreshRequestData: JsonObject = JsonObject(),
         refreshToken: String? = null
     ) : this(
-        audience, issuerDomain, authMethod, issuerProtocol, tokenPath, tokenRequestData, refreshRequestData,
+        audience, issuerDomain, authMethod, issuerProtocol, requestContentType, tokenPath, tokenRequestData, refreshRequestData,
         if (verifyCertificate) HttpClient.newHttpClient() else HttpClient.newBuilder().sslContext(SSLContextUtils.allTrustingSSLContext()).build(),
         refreshToken
     )
@@ -102,6 +105,7 @@ data class ZepbenTokenFetcher(
      * @property issuerProtocol Protocol of the token issuer. You should not change this unless you are absolutely sure of
      *                          what you are doing. Setting it to anything other than https is a major security risk as
      *                          tokens will be sent in the clear.
+     * @property requestContentType  content type for the OAUTH2 request.
      * @property tokenPath Path for requesting token from `issuer_domain`.
      * @property tokenRequestData Data to pass in token requests.
      * @property refreshRequestData Data to pass in refresh token requests.
@@ -112,12 +116,13 @@ data class ZepbenTokenFetcher(
         authMethod: AuthMethod,
         caFilename: String?,
         issuerProtocol: String = "https",
+        requestContentType: String = "application/json",
         tokenPath: String = "/oauth/token",
         tokenRequestData: JsonObject = JsonObject(),
         refreshRequestData: JsonObject = JsonObject(),
         refreshToken: String? = null,
     ) : this(
-        audience, issuerDomain, authMethod, issuerProtocol, tokenPath, tokenRequestData, refreshRequestData,
+        audience, issuerDomain, authMethod, issuerProtocol, requestContentType, tokenPath, tokenRequestData, refreshRequestData,
         caFilename?.let {
             HttpClient.newBuilder().sslContext(SSLContextUtils.singleCACertSSLContext(caFilename)).build()
         } ?: HttpClient.newHttpClient(),
@@ -138,13 +143,13 @@ data class ZepbenTokenFetcher(
             // Stored token has expired, try to refresh
             accessToken = null
             if (!refreshToken.isNullOrEmpty()) {
-                fetchTokenAuth0(useRefresh = true)
+                fetchOAuthToken(useRefresh = true)
             }
 
             if (accessToken == null) {
                 // If using the refresh token did not work for any reason, self._access_token will still be None.
                 // and thus we must try to get a fresh access token using credentials instead.
-                fetchTokenAuth0()
+                fetchOAuthToken()
             }
 
             if (tokenType.isNullOrEmpty() or accessToken.isNullOrEmpty()) {
@@ -158,14 +163,19 @@ data class ZepbenTokenFetcher(
         return "$tokenType $accessToken"
     }
 
-    private fun fetchTokenAuth0(useRefresh: Boolean = false) {
+    private fun fetchOAuthToken(useRefresh: Boolean = false) {
         val body = if (useRefresh) {
             refreshRequestData.put("refresh_token", refreshToken)
             refreshRequestData.toString()
         } else tokenRequestData.toString()
+
+        val issuer = if (issuerDomain.startsWith("https"))
+            issuerDomain
+        else "https://$issuerDomain"
+
         val request = HttpRequest.newBuilder()
-            .uri(URL(issuerProtocol, issuerDomain, tokenPath).toURI())
-            .header("content-type", "application/json")
+            .uri(URL("$issuer/$tokenPath").toURI())
+            .header("content-type", requestContentType)
             .POST(HttpRequest.BodyPublishers.ofString(body))
             .build()
         val response = client.send(request, HttpResponse.BodyHandlers.ofString())
@@ -230,7 +240,8 @@ fun createTokenFetcher(
     authClient: HttpClient,
     authTypeField: String = "authType",
     audienceField: String = "audience",
-    issuerDomainField: String = "issuer"
+    issuerDomainField: String = "issuer",
+    tokenPathField: String = "tokenPath"
 ): ZepbenTokenFetcher? {
     val request = HttpRequest.newBuilder().uri(URI(confAddress)).GET().build()
     val response = confClient.send(request, HttpResponse.BodyHandlers.ofString())
@@ -243,6 +254,7 @@ fun createTokenFetcher(
                     authConfigJson.getString(audienceField),
                     authConfigJson.getString(issuerDomainField),
                     authMethod,
+                    tokenPath = authConfigJson.getString(tokenPathField),
                     client = authClient
                 )
             }
