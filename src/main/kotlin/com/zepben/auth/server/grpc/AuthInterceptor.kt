@@ -65,7 +65,7 @@ class AuthInterceptor(
             val r = tokenAuthenticator.authenticate(value.substring(BEARER_TYPE.length).trim { it <= ' ' })
             if (r.statusCode === StatusCode.OK)
                 requiredScopes[serverCall.methodDescriptor.serviceName!!]?.let {
-                    authRespToGrpcAuthResp(JWTAuthoriser.authorise(r.token!!, it))
+                    authRespToGrpcAuthResp(JWTAuthoriser.authorise(r.token!!, it, permissionsKey))
                 }
                     ?: GrpcAuthResp(Status.UNAUTHENTICATED.withDescription("Server has not defined a permission scope for ${serverCall.methodDescriptor.serviceName}. This is a bug, contact the developers."))
             else

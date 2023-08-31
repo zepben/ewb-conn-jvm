@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with zepben-auth.  If not, see <https://www.gnu.org/licenses/>.
 
-
 package com.zepben.auth.server
 
+import com.zepben.auth.common.AuthMethod
 import com.zepben.vertxutils.routing.Respond
 import com.zepben.vertxutils.routing.Route
 import com.zepben.vertxutils.routing.RouteVersion
@@ -27,16 +27,30 @@ import io.vertx.core.http.HttpMethod
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.RoutingContext
 
-private data class AuthConfigResponse(val authType: String, val issuer: String, val audience: String)
+private data class AuthConfigResponse(
+    val authType: AuthMethod,
+    val issuerDomain: String,
+    val audience: String,
+    val tokenPath: String,
+    val algorithm: String = "RS256"
+)
 
-fun routeFactory(availableRoute: AvailableRoute, audience: String, domain: String, algorithm: String = "RS256"): Route =
+fun routeFactory(
+    availableRoute: AvailableRoute,
+    audience: String,
+    domain: String,
+    tokenPath: String,
+    authType: AuthMethod = AuthMethod.AUTH0,
+    algorithm: String = "RS256"
+): Route =
     when (availableRoute) {
         AvailableRoute.AUTH_CONFIG ->
             Route.builder()
                 .method(HttpMethod.GET)
                 .path("/auth")
-                .addHandler(AuthConfigRoute(audience, domain, algorithm))
+                .addHandler(AuthConfigRoute(audience, domain, tokenPath, authType))
                 .build()
+
         else -> throw IllegalArgumentException("Invalid Route")
     }
 
@@ -48,8 +62,9 @@ enum class AvailableRoute(private val rv: RouteVersion) : VersionableRoute {
     }
 }
 
-class AuthConfigRoute(audience: String, domain: String, algorithm: String) : Handler<RoutingContext> {
-    private val json: JsonObject = JsonObject.mapFrom(AuthConfigResponse(audience, domain, algorithm))
+class AuthConfigRoute(audience: String, domain: String, tokenPath: String, authType: AuthMethod, algorithm: String = "RS256") : Handler<RoutingContext> {
+
+    private val json: JsonObject = JsonObject.mapFrom(AuthConfigResponse(authType, domain, audience, tokenPath, algorithm))
 
     override fun handle(event: RoutingContext) {
         Respond.withJson(event, HttpResponseStatus.OK, json.encode())

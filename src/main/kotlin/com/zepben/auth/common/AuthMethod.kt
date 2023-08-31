@@ -24,5 +24,7 @@ package com.zepben.auth.common
 enum class AuthMethod {
     NONE,
     SELF,
-    OAUTH
+    OAUTH,
+    AUTH0,
+    AZURE
 }

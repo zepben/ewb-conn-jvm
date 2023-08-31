@@ -18,6 +18,7 @@
 package com.zepben.auth.server
 
 
+import com.zepben.auth.common.AuthMethod
 import com.zepben.testutils.vertx.TestHttpServer
 import com.zepben.vertxutils.routing.RouteVersionUtils
 import io.netty.handler.codec.http.HttpResponseStatus
@@ -38,7 +39,7 @@ class AuthConfigRouteTest {
             RouteVersionUtils.forVersion(
                 AvailableRoute.values(),
                 2
-            ) { routeFactory(it, "test-auth-type", "test-issuer", "test-audience") }
+            ) { routeFactory(it, "test-audience", "test-issuer", "test-token-path", AuthMethod.AUTH0) }
         )
         port = server!!.listen()
     }
@@ -46,9 +47,11 @@ class AuthConfigRouteTest {
     @Test
     fun testHandle() {
         val expectedResponse: String = JsonObject().apply {
-            put("authType", "test-auth-type")
-            put("issuer", "test-issuer")
+            put("authType", AuthMethod.AUTH0)
+            put("issuerDomain", "test-issuer")
             put("audience", "test-audience")
+            put("tokenPath", "test-token-path")
+            put("algorithm", "RS256")
         }.encode()
 
         val response = RestAssured.given()
