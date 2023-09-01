@@ -57,8 +57,8 @@ interface TokenAuthenticator {
  */
 open class JWTAuthenticator(
     private val audience: String,
-    private val jwkProvider: UrlJwkProvider,
-    private val issuer: String
+    private val issuer: String,
+    private val jwkProvider: UrlJwkProvider
 ): TokenAuthenticator {
     private var keys: Map<String, Jwk> = refreshJwk()
 

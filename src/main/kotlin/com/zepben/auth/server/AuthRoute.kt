@@ -59,7 +59,7 @@ class AuthRoute {
                             .hasRegexPath(isRegexPath)
                             .addHandler(
                                 Auth0AuthHandler(
-                                    JWTAuthProvider(JWTAuthenticator(audience, jwkProvider, issuer)),
+                                    JWTAuthProvider(JWTAuthenticator(audience, issuer, jwkProvider)),
                                     mutableSetOf<String>().apply { addAll(requiredClaims) }
                                 )
                             )

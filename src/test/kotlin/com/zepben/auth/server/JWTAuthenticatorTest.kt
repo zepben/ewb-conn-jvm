@@ -29,7 +29,7 @@ class JWTAuthenticatorTest {
 
     @Test
     fun testAuth() {
-        var ta = JWTAuthenticator("https://fake-aud/", MockJwksUrlProvider(), "https://issuer/")
+        var ta = JWTAuthenticator("https://fake-aud/", "https://issuer/", MockJwksUrlProvider())
         var authResp = ta.authenticate(TOKEN)
         assertThat(authResp.statusCode, equalTo(StatusCode.OK))
         val successfulToken = authResp.token!!
@@ -56,13 +56,13 @@ class JWTAuthenticatorTest {
         assertThat(authResp.statusCode, equalTo(StatusCode.UNAUTHENTICATED))
         assertThat(authResp.cause, instanceOf(TokenExpiredException::class.java))
 
-        ta = JWTAuthenticator("https://wrong-aud/", MockJwksUrlProvider(), "https://issuer/")
+        ta = JWTAuthenticator("https://wrong-aud/", "https://issuer/", MockJwksUrlProvider())
         authResp = ta.authenticate(TOKEN)
         assertThat(authResp.statusCode, equalTo(StatusCode.PERMISSION_DENIED))
         assertThat(authResp.cause, instanceOf(InvalidClaimException::class.java))
         assertThat(authResp.message, equalTo("The Claim 'aud' value doesn't contain the required audience."))
 
-        ta = JWTAuthenticator("https://fake-aud/", MockJwksUrlProvider(), "wrong-issuer")
+        ta = JWTAuthenticator("https://fake-aud/", "wrong-issuer", MockJwksUrlProvider())
         authResp = ta.authenticate(TOKEN)
         assertThat(authResp.statusCode, equalTo(StatusCode.PERMISSION_DENIED))
         assertThat(authResp.cause, instanceOf(InvalidClaimException::class.java))
