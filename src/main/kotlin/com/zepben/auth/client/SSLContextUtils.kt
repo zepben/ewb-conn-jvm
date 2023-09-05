@@ -56,8 +56,8 @@ object SSLContextUtils {
 
         val ks = KeyStore.getInstance(KeyStore.getDefaultType())
         ks.load(null) // Initialise to empty keystore
-        caCert.forEachIndexed { i, it ->
-           ks.setCertificateEntry("caCert$i", it)
+        caCert.forEachIndexed { i, cert ->
+           ks.setCertificateEntry("caCert$i", cert)
         }
 
         val tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
