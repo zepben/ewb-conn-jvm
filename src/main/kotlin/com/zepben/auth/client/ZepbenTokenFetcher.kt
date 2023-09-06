@@ -46,7 +46,7 @@ import java.time.Instant
  * @property tokenRequestData Data to pass in token requests.
  * @property refreshRequestData Data to pass in refresh token requests.
  * @property client HTTP client used to retrieve tokens. Defaults to HttpClient.newHttpClient().
- * @property refreshToken Flag to set if refreshing the token
+ * @property refreshToken Refresh Token; will be used if defined (fetched previously).
  * @property createBody a callback to turn the <*>RequestData into a string. AUTH0 requires JSON representation, where AZURE is query params.
  */
 data class ZepbenTokenFetcher(
@@ -59,8 +59,8 @@ data class ZepbenTokenFetcher(
     val refreshRequestData: JsonObject = JsonObject(),
     private val client: HttpClient = HttpClient.newHttpClient(),
     private var refreshToken: String? = null,
-    var requestContentType: String = "application/json",
-    var createBody: (JsonObject) -> String = { it.toString() }
+    val requestContentType: String = "application/json",
+    val createBody: (JsonObject) -> String = { it.toString() }
 ) {
     private var accessToken: String? = null
     private var tokenExpiry: Instant = Instant.MIN
@@ -80,7 +80,6 @@ data class ZepbenTokenFetcher(
      * @property tokenPath Path for requesting token from `issuer_domain`.
      * @property tokenRequestData Data to pass in token requests.
      * @property refreshRequestData Data to pass in refresh token requests.
-     * @property refreshToken Flag to set if refreshing the token
      * @property createBody a callback to turn the <*>RequestData into a string. AUTH0 requires JSON representation, where AZURE is query params.
      */
     constructor(
@@ -93,12 +92,18 @@ data class ZepbenTokenFetcher(
         tokenPath: String = "/oauth/token",
         tokenRequestData: JsonObject = JsonObject(),
         refreshRequestData: JsonObject = JsonObject(),
-        refreshToken: String? = null,
         createBody: (JsonObject) -> String = { it.toString() }
     ) : this(
-        audience, issuerDomain, authMethod, issuerProtocol, tokenPath, tokenRequestData, refreshRequestData,
-        if (verifyCertificate) HttpClient.newHttpClient() else HttpClient.newBuilder().sslContext(SSLContextUtils.allTrustingSSLContext()).build(),
-        refreshToken, requestContentType, createBody
+        audience = audience,
+        issuerDomain = issuerDomain,
+        authMethod = authMethod,
+        issuerProtocol = issuerProtocol,
+        tokenPath = tokenPath,
+        tokenRequestData = tokenRequestData,
+        refreshRequestData = refreshRequestData,
+        client = if (verifyCertificate) HttpClient.newHttpClient() else HttpClient.newBuilder().sslContext(SSLContextUtils.allTrustingSSLContext()).build(),
+        requestContentType = requestContentType,
+        createBody = createBody
     )
 
     /**
@@ -115,7 +120,6 @@ data class ZepbenTokenFetcher(
      * @property tokenPath Path for requesting token from `issuer_domain`.
      * @property tokenRequestData Data to pass in token requests.
      * @property refreshRequestData Data to pass in refresh token requests.
-     * @property refreshToken Flag to set if refreshing the token
      * @property createBody a callback to turn the <*>RequestData into a string. AUTH0 requires JSON representation, where AZURE is query params.
      */
     constructor(
@@ -128,22 +132,25 @@ data class ZepbenTokenFetcher(
         tokenPath: String = "/oauth/token",
         tokenRequestData: JsonObject = JsonObject(),
         refreshRequestData: JsonObject = JsonObject(),
-        refreshToken: String? = null,
         createBody: (JsonObject) -> String = { it.toString() }
     ) : this(
-        audience, issuerDomain, authMethod, issuerProtocol, tokenPath, tokenRequestData, refreshRequestData,
-        caFilename?.let {
+        audience = audience,
+        issuerDomain = issuerDomain,
+        authMethod = authMethod,
+        issuerProtocol = issuerProtocol,
+        tokenPath = tokenPath,
+        tokenRequestData = tokenRequestData,
+        refreshRequestData = refreshRequestData,
+        client = caFilename?.let {
             HttpClient.newBuilder().sslContext(SSLContextUtils.singleCACertSSLContext(caFilename)).build()
         } ?: HttpClient.newHttpClient(),
-        refreshToken, requestContentType, createBody
+        requestContentType = requestContentType,
+        createBody = createBody
     )
 
     init {
         tokenRequestData.put("audience", audience)
         refreshRequestData.put("audience", audience)
-        // Azure will use this
-        tokenRequestData.put("scope", "$audience/.default")
-        refreshRequestData.put("scope", "$audience/.default")
     }
 
     /**
@@ -159,7 +166,7 @@ data class ZepbenTokenFetcher(
             }
 
             if (accessToken == null) {
-                // If using the refresh token did not work for any reason, self._access_token will still be None.
+                // If using the refresh token did not work for any reason, self.accessToken will still be None.
                 // and thus we must try to get a fresh access token using credentials instead.
                 fetchOAuthToken()
             }
@@ -181,7 +188,7 @@ data class ZepbenTokenFetcher(
             createBody(refreshRequestData)
         } else createBody(tokenRequestData)
 
-        val issuer = if (issuerDomain.startsWith("https"))
+        val issuer = if (issuerDomain.startsWith("https://"))
             issuerDomain
         else "https://$issuerDomain"
 
@@ -273,7 +280,12 @@ fun createTokenFetcher(
                     requestContentType = contentType(authMethod, requestContentType),
                     tokenPath = authConfigJson.getString(tokenPathField),
                     createBody = createRequestBody(authMethod, createBody)
-                )
+                ).also {
+                    if (it.authMethod == AuthMethod.AZURE) {
+                        it.tokenRequestData.put("scope", "${it.audience}/.default")
+                        it.refreshRequestData.put("scope", "${it.audience}/.default")
+                    }
+                }
             }
         } catch (e: DecodeException) {
             throw AuthException(
