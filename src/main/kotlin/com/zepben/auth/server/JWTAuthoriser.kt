@@ -22,16 +22,16 @@ import com.zepben.auth.common.StatusCode
 
 object JWTAuthoriser {
     @JvmStatic
-    fun authorise(token: DecodedJWT, requiredClaim: String): AuthResponse {
-        val permissions = token.getClaim("permissions").asList(String::class.java).toHashSet()
+    fun authorise(token: DecodedJWT, requiredClaim: String, permissionsField: String = "permissions"): AuthResponse {
+        val permissions = token.getClaim(permissionsField).asList(String::class.java).toHashSet()
         if (requiredClaim in permissions)
             return AuthResponse(StatusCode.OK)
         return AuthResponse(StatusCode.UNAUTHENTICATED, "Token was missing required claim $requiredClaim")
     }
 
     @JvmStatic
-    fun authorise(token: DecodedJWT, requiredClaims: Set<String>): AuthResponse {
-        val permissions = token.getClaim("permissions").asList(String::class.java).toHashSet()
+    fun authorise(token: DecodedJWT, requiredClaims: Set<String>, permissionsField: String = "permissions"): AuthResponse {
+        val permissions = token.getClaim(permissionsField).asList(String::class.java).toHashSet()
         if (permissions.intersect(requiredClaims).size == requiredClaims.size)
             return AuthResponse(StatusCode.OK)
         return AuthResponse(

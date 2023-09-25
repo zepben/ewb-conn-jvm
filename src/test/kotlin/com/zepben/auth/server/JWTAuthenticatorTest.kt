@@ -14,12 +14,11 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with zepben-auth.  If not, see <https://www.gnu.org/licenses/>.
 
-
 package com.zepben.auth.server
 
 import com.auth0.jwt.exceptions.*
-import com.zepben.auth.server.JWTAuthoriser.authorise
 import com.zepben.auth.common.StatusCode
+import com.zepben.auth.server.JWTAuthoriser.authorise
 import com.zepben.testutils.auth.*
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.equalTo
@@ -30,7 +29,7 @@ class JWTAuthenticatorTest {
 
     @Test
     fun testAuth() {
-        var ta = JWTAuthenticator("https://fake-aud/", "issuer", MockJwksUrlProvider())
+        var ta = JWTAuthenticator("https://fake-aud/", "https://issuer/", MockJwksUrlProvider())
         var authResp = ta.authenticate(TOKEN)
         assertThat(authResp.statusCode, equalTo(StatusCode.OK))
         val successfulToken = authResp.token!!
@@ -57,7 +56,7 @@ class JWTAuthenticatorTest {
         assertThat(authResp.statusCode, equalTo(StatusCode.UNAUTHENTICATED))
         assertThat(authResp.cause, instanceOf(TokenExpiredException::class.java))
 
-        ta = JWTAuthenticator("https://wrong-aud/", "issuer", MockJwksUrlProvider())
+        ta = JWTAuthenticator("https://wrong-aud/", "https://issuer/", MockJwksUrlProvider())
         authResp = ta.authenticate(TOKEN)
         assertThat(authResp.statusCode, equalTo(StatusCode.PERMISSION_DENIED))
         assertThat(authResp.cause, instanceOf(InvalidClaimException::class.java))

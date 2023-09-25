@@ -33,7 +33,7 @@ class AuthInterceptorTest {
 
     @Test
     fun testIntercept() {
-        var ta = JWTAuthenticator("https://fake-aud/", "issuer", MockJwksUrlProvider())
+        var ta = JWTAuthenticator("https://fake-aud/", "https://issuer/", MockJwksUrlProvider())
         val requiredScopes = mapOf(
             "zepben.protobuf.np.NetworkProducer" to write_network_scope
         )

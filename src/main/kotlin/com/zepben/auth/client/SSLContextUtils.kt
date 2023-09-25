@@ -52,11 +52,13 @@ object SSLContextUtils {
      */
     fun singleCACertSSLContext(caCertFilename: String): SSLContext {
         val cf = CertificateFactory.getInstance("X.509")
-        val caCert = cf.generateCertificate(FileInputStream(caCertFilename))
+        val caCert = cf.generateCertificates(FileInputStream(caCertFilename))
 
         val ks = KeyStore.getInstance(KeyStore.getDefaultType())
         ks.load(null) // Initialise to empty keystore
-        ks.setCertificateEntry("caCert", caCert)
+        caCert.forEachIndexed { i, cert ->
+           ks.setCertificateEntry("caCert$i", cert)
+        }
 
         val tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
         tmf.init(ks)

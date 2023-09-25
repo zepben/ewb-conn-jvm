@@ -21,17 +21,16 @@ import com.auth0.jwt.JWT
 import com.zepben.auth.common.AuthException
 import com.zepben.auth.common.AuthMethod
 import com.zepben.auth.common.StatusCode
+import com.zepben.auth.server.CONTENT_TYPE
 import io.vertx.core.json.DecodeException
+import io.vertx.core.json.Json
+import io.vertx.core.json.JsonObject
+import java.net.URI
 import java.net.URL
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Instant
-import io.vertx.core.json.Json
-import io.vertx.core.json.JsonObject
-import java.net.URI
-import javax.net.ssl.SSLContext
-import kotlin.Exception
 
 /**
  * Fetches access tokens from an authentication provider using the OAuth 2.0 protocol.
@@ -42,10 +41,13 @@ import kotlin.Exception
  * @property issuerProtocol Protocol of the token issuer. You should not change this unless you are absolutely sure of
  *                          what you are doing. Setting it to anything other than https is a major security risk as
  *                          tokens will be sent in the clear.
+ * @property requestContentType  content type for the OAUTH2 request.
  * @property tokenPath Path for requesting token from `issuer_domain`.
  * @property tokenRequestData Data to pass in token requests.
  * @property refreshRequestData Data to pass in refresh token requests.
  * @property client HTTP client used to retrieve tokens. Defaults to HttpClient.newHttpClient().
+ * @property refreshToken Refresh Token; will be used if defined (fetched previously).
+ * @property createBody a callback to turn the <*>RequestData into a string. AUTH0 requires JSON representation, where AZURE is query params.
  */
 data class ZepbenTokenFetcher(
     val audience: String,
@@ -56,7 +58,9 @@ data class ZepbenTokenFetcher(
     val tokenRequestData: JsonObject = JsonObject(),
     val refreshRequestData: JsonObject = JsonObject(),
     private val client: HttpClient = HttpClient.newHttpClient(),
-    private var refreshToken: String? = null
+    private var refreshToken: String? = null,
+    val requestContentType: String = "application/json",
+    val createBody: (JsonObject) -> String = { it.toString() }
 ) {
     private var accessToken: String? = null
     private var tokenExpiry: Instant = Instant.MIN
@@ -72,9 +76,11 @@ data class ZepbenTokenFetcher(
      * @property issuerProtocol Protocol of the token issuer. You should not change this unless you are absolutely sure of
      *                          what you are doing. Setting it to anything other than https is a major security risk as
      *                          tokens will be sent in the clear.
+     * @property requestContentType  content type for the OAUTH2 request.
      * @property tokenPath Path for requesting token from `issuer_domain`.
      * @property tokenRequestData Data to pass in token requests.
      * @property refreshRequestData Data to pass in refresh token requests.
+     * @property createBody a callback to turn the <*>RequestData into a string. AUTH0 requires JSON representation, where AZURE is query params.
      */
     constructor(
         audience: String,
@@ -82,14 +88,22 @@ data class ZepbenTokenFetcher(
         authMethod: AuthMethod,
         verifyCertificate: Boolean,
         issuerProtocol: String = "https",
+        requestContentType: String = "application/json",
         tokenPath: String = "/oauth/token",
         tokenRequestData: JsonObject = JsonObject(),
         refreshRequestData: JsonObject = JsonObject(),
-        refreshToken: String? = null
+        createBody: (JsonObject) -> String = { it.toString() }
     ) : this(
-        audience, issuerDomain, authMethod, issuerProtocol, tokenPath, tokenRequestData, refreshRequestData,
-        if (verifyCertificate) HttpClient.newHttpClient() else HttpClient.newBuilder().sslContext(SSLContextUtils.allTrustingSSLContext()).build(),
-        refreshToken
+        audience = audience,
+        issuerDomain = issuerDomain,
+        authMethod = authMethod,
+        issuerProtocol = issuerProtocol,
+        tokenPath = tokenPath,
+        tokenRequestData = tokenRequestData,
+        refreshRequestData = refreshRequestData,
+        client = if (verifyCertificate) HttpClient.newHttpClient() else HttpClient.newBuilder().sslContext(SSLContextUtils.allTrustingSSLContext()).build(),
+        requestContentType = requestContentType,
+        createBody = createBody
     )
 
     /**
@@ -102,9 +116,11 @@ data class ZepbenTokenFetcher(
      * @property issuerProtocol Protocol of the token issuer. You should not change this unless you are absolutely sure of
      *                          what you are doing. Setting it to anything other than https is a major security risk as
      *                          tokens will be sent in the clear.
+     * @property requestContentType  content type for the OAUTH2 request.
      * @property tokenPath Path for requesting token from `issuer_domain`.
      * @property tokenRequestData Data to pass in token requests.
      * @property refreshRequestData Data to pass in refresh token requests.
+     * @property createBody a callback to turn the <*>RequestData into a string. AUTH0 requires JSON representation, where AZURE is query params.
      */
     constructor(
         audience: String,
@@ -112,16 +128,24 @@ data class ZepbenTokenFetcher(
         authMethod: AuthMethod,
         caFilename: String?,
         issuerProtocol: String = "https",
+        requestContentType: String = "application/json",
         tokenPath: String = "/oauth/token",
         tokenRequestData: JsonObject = JsonObject(),
         refreshRequestData: JsonObject = JsonObject(),
-        refreshToken: String? = null,
+        createBody: (JsonObject) -> String = { it.toString() }
     ) : this(
-        audience, issuerDomain, authMethod, issuerProtocol, tokenPath, tokenRequestData, refreshRequestData,
-        caFilename?.let {
+        audience = audience,
+        issuerDomain = issuerDomain,
+        authMethod = authMethod,
+        issuerProtocol = issuerProtocol,
+        tokenPath = tokenPath,
+        tokenRequestData = tokenRequestData,
+        refreshRequestData = refreshRequestData,
+        client = caFilename?.let {
             HttpClient.newBuilder().sslContext(SSLContextUtils.singleCACertSSLContext(caFilename)).build()
         } ?: HttpClient.newHttpClient(),
-        refreshToken
+        requestContentType = requestContentType,
+        createBody = createBody
     )
 
     init {
@@ -138,13 +162,13 @@ data class ZepbenTokenFetcher(
             // Stored token has expired, try to refresh
             accessToken = null
             if (!refreshToken.isNullOrEmpty()) {
-                fetchTokenAuth0(useRefresh = true)
+                fetchOAuthToken(useRefresh = true)
             }
 
             if (accessToken == null) {
-                // If using the refresh token did not work for any reason, self._access_token will still be None.
+                // If using the refresh token did not work for any reason, self.accessToken will still be None.
                 // and thus we must try to get a fresh access token using credentials instead.
-                fetchTokenAuth0()
+                fetchOAuthToken()
             }
 
             if (tokenType.isNullOrEmpty() or accessToken.isNullOrEmpty()) {
@@ -158,14 +182,19 @@ data class ZepbenTokenFetcher(
         return "$tokenType $accessToken"
     }
 
-    private fun fetchTokenAuth0(useRefresh: Boolean = false) {
+    private fun fetchOAuthToken(useRefresh: Boolean = false) {
         val body = if (useRefresh) {
             refreshRequestData.put("refresh_token", refreshToken)
-            refreshRequestData.toString()
-        } else tokenRequestData.toString()
+            createBody(refreshRequestData)
+        } else createBody(tokenRequestData)
+
+        val issuer = if (issuerDomain.startsWith("https://"))
+            issuerDomain
+        else "https://$issuerDomain"
+
         val request = HttpRequest.newBuilder()
-            .uri(URL(issuerProtocol, issuerDomain, tokenPath).toURI())
-            .header("content-type", "application/json")
+            .uri(URL("$issuer/$tokenPath").toURI())
+            .header(CONTENT_TYPE, requestContentType)
             .POST(HttpRequest.BodyPublishers.ofString(body))
             .build()
         val response = client.send(request, HttpResponse.BodyHandlers.ofString())
@@ -208,8 +237,8 @@ data class ZepbenTokenFetcher(
             refreshToken = data.getString("refresh_token")
         }
     }
-}
 
+}
 
 /**
  * Helper method to fetch auth related configuration from `confAddress` and create a `ZepbenTokenFetcher`.
@@ -219,8 +248,9 @@ data class ZepbenTokenFetcher(
  * @param confClient HTTP client used to retrieve authentication configuration.
  * @param authClient HTTP client used to retrieve tokens.
  * @param authTypeField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
- * @param audienceField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
- * @param issuerDomainField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
+ * @param audienceField The field name to look up in the JSON response from the confAddress for `tokenFetcher.audience`.
+ * @param issuerDomainField The field name to look up in the JSON response from the confAddress for `tokenFetcher.issuerDomainField`.
+ * @param createBody a callback to turn the <*>RequestData into a string. AUTH0 requires JSON representation, where AZURE is query params.
  *
  * @returns: A `ZepbenTokenFetcher` if the server reported authentication was configured, otherwise None.
  */
@@ -230,7 +260,10 @@ fun createTokenFetcher(
     authClient: HttpClient,
     authTypeField: String = "authType",
     audienceField: String = "audience",
-    issuerDomainField: String = "issuer"
+    issuerDomainField: String = "issuerDomain",
+    tokenPathField: String = "tokenPath",
+    requestContentType: String? = null,
+    createBody: ((JsonObject) -> String)? = null,
 ): ZepbenTokenFetcher? {
     val request = HttpRequest.newBuilder().uri(URI(confAddress)).GET().build()
     val response = confClient.send(request, HttpResponse.BodyHandlers.ofString())
@@ -240,11 +273,19 @@ fun createTokenFetcher(
             val authMethod = AuthMethod.valueOf(authConfigJson.getString(authTypeField))
             if (authMethod != AuthMethod.NONE) {
                 return ZepbenTokenFetcher(
-                    authConfigJson.getString(audienceField),
-                    authConfigJson.getString(issuerDomainField),
-                    authMethod,
-                    client = authClient
-                )
+                    audience = authConfigJson.getString(audienceField),
+                    issuerDomain = authConfigJson.getString(issuerDomainField),
+                    authMethod = authMethod,
+                    client = authClient,
+                    requestContentType = contentType(authMethod, requestContentType),
+                    tokenPath = authConfigJson.getString(tokenPathField),
+                    createBody = createRequestBody(authMethod, createBody)
+                ).also {
+                    if (it.authMethod == AuthMethod.AZURE) {
+                        it.tokenRequestData.put("scope", "${it.audience}/.default")
+                        it.refreshRequestData.put("scope", "${it.audience}/.default")
+                    }
+                }
             }
         } catch (e: DecodeException) {
             throw AuthException(
@@ -266,6 +307,24 @@ fun createTokenFetcher(
     return null
 }
 
+private fun contentType(authMethod: AuthMethod, requestContentType: String?): String {
+    if (!requestContentType.isNullOrEmpty())
+        return requestContentType
+
+    return if (authMethod == AuthMethod.AZURE)
+        "application/x-www-form-urlencoded"
+    else "application/json"
+}
+
+private fun createRequestBody(authMethod: AuthMethod, createBody: ((JsonObject) -> String)?): (JsonObject) -> String {
+    if (createBody != null)
+        return createBody
+
+    return if (authMethod == AuthMethod.AZURE)
+        { it -> it.joinToString("&") { m -> "${m.key}=${m.value}" } }
+    else { it -> it.toString() }
+}
+
 /**
  * Helper method to fetch auth related configuration from `confAddress` and create a `ZepbenTokenFetcher`.
  * You may use `verififyCertificates` to specify whether to verify the certificates for the domains serving the
@@ -285,7 +344,8 @@ fun createTokenFetcher(
     verifyCertificates: Boolean,
     authTypeField: String = "authType",
     audienceField: String = "audience",
-    issuerDomainField: String = "issuer",
+    issuerDomainField: String = "issuerDomain",
+    tokenPathField: String = "tokenPath",
 ) = createTokenFetcher(
     confAddress,
     if (verifyCertificates) HttpClient.newHttpClient() else HttpClient.newBuilder().sslContext(SSLContextUtils.allTrustingSSLContext()).build(),
@@ -293,6 +353,7 @@ fun createTokenFetcher(
     authTypeField,
     audienceField,
     issuerDomainField,
+    tokenPathField
 )
 
 /**
@@ -306,6 +367,9 @@ fun createTokenFetcher(
  * @param authTypeField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
  * @param audienceField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
  * @param issuerDomainField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
+ * @param tokenPathField The field name for token fetch endpoint
+ * @param verifyCertificates: Whether to verify the certificate when making HTTPS requests. Note you should only use a trusted server
+ *                            and never set this to False in a production environment.
  *
  * @returns: A `ZepbenTokenFetcher` if the server reported authentication was configured, otherwise None.
  */
@@ -315,16 +379,19 @@ fun createTokenFetcher(
     authCAFilename: String? = null,
     authTypeField: String = "authType",
     audienceField: String = "audience",
-    issuerDomainField: String = "issuer",
+    issuerDomainField: String = "issuerDomain",
+    tokenPathField: String = "tokenPath",
+    verifyCertificates: Boolean = true
 ) = createTokenFetcher(
     confAddress,
     confCAFilename?.let {
         HttpClient.newBuilder().sslContext(SSLContextUtils.singleCACertSSLContext(it)).build()
-    } ?: HttpClient.newHttpClient(),
+    } ?: if (verifyCertificates) HttpClient.newHttpClient() else HttpClient.newBuilder().sslContext(SSLContextUtils.allTrustingSSLContext()).build() ,
     authCAFilename?.let {
         HttpClient.newBuilder().sslContext(SSLContextUtils.singleCACertSSLContext(it)).build()
-    } ?: HttpClient.newHttpClient(),
+    } ?: if (verifyCertificates) HttpClient.newHttpClient() else HttpClient.newBuilder().sslContext(SSLContextUtils.allTrustingSSLContext()).build() ,
     authTypeField,
     audienceField,
     issuerDomainField,
+    tokenPathField
 )

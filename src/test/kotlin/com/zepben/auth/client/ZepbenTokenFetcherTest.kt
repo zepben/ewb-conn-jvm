@@ -84,7 +84,7 @@ internal class ZepbenTokenFetcherTest {
     fun testCreateTokenFetcherSuccess() {
         doReturn(StatusCode.OK.code).`when`(response).statusCode()
         doReturn(
-            "{\"authType\": \"OAUTH\", \"audience\": \"test_audience\", \"issuer\": \"test_issuer\"}"
+            "{\"authType\": \"OAUTH\", \"audience\": \"test_audience\", \"issuerDomain\": \"test_issuer\", \"tokenPath\": \"/oauth/token\"}"
         ).`when`(response).body()
 
         val tokenFetcher = createTokenFetcher("https://testaddress", confClient = client, authClient = client)
@@ -97,7 +97,7 @@ internal class ZepbenTokenFetcherTest {
     fun testCreateTokenFetcherNoAuth() {
         doReturn(StatusCode.OK.code).`when`(response).statusCode()
         doReturn(
-            "{\"authType\": \"NONE\", \"audience\": \"\", \"issuer\": \"\"}"
+            "{\"authType\": \"NONE\", \"audience\": \"\", \"issuerDomain\": \"\"}"
         ).`when`(response).body()
 
         val tokenFetcher = createTokenFetcher("https://testaddress", confClient = client, authClient = client)

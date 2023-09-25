@@ -47,7 +47,8 @@ data class GrpcAuthResp(val status: Status, val token: DecodedJWT? = null)
 
 class AuthInterceptor(
     private val tokenAuthenticator: TokenAuthenticator,
-    private val requiredScopes: Map<String, String>
+    private val requiredScopes: Map<String, String>,
+    private val permissionsKey: String = "permissions"
 ) : ServerInterceptor {
 
     override fun <ReqT, RespT> interceptCall(
@@ -64,7 +65,7 @@ class AuthInterceptor(
             val r = tokenAuthenticator.authenticate(value.substring(BEARER_TYPE.length).trim { it <= ' ' })
             if (r.statusCode === StatusCode.OK)
                 requiredScopes[serverCall.methodDescriptor.serviceName!!]?.let {
-                    authRespToGrpcAuthResp(JWTAuthoriser.authorise(r.token!!, it))
+                    authRespToGrpcAuthResp(JWTAuthoriser.authorise(r.token!!, it, permissionsKey))
                 }
                     ?: GrpcAuthResp(Status.UNAUTHENTICATED.withDescription("Server has not defined a permission scope for ${serverCall.methodDescriptor.serviceName}. This is a bug, contact the developers."))
             else
