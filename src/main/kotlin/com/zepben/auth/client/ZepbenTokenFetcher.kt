@@ -250,7 +250,9 @@ data class ZepbenTokenFetcher(
  * @param authTypeField The field name to look up in the JSON response from the confAddress for `tokenFetcher.authMethod`.
  * @param audienceField The field name to look up in the JSON response from the confAddress for `tokenFetcher.audience`.
  * @param issuerDomainField The field name to look up in the JSON response from the confAddress for `tokenFetcher.issuerDomainField`.
- * @param createBody a callback to turn the <*>RequestData into a string. AUTH0 requires JSON representation, where AZURE is query params.
+ * @param tokenPathField The field name to look up in the JSON response from the confAddress for `tokenFetcher.tokenPathField`.
+ * @param requestContentType The content type required for the response. Defaults to application/json for Auth0 and application/x-www-form-urlencoded for Azure.
+ * @param createBody a callback to turn the <*>RequestData into a string. By default will handle types for Azure and Auth0 as per requestContentType.
  *
  * @returns: A `ZepbenTokenFetcher` if the server reported authentication was configured, otherwise None.
  */
