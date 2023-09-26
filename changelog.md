@@ -1,3 +1,19 @@
+# Evolve SDK connection library
+## [0.7.0] - UNRELEASED
+##### Breaking Changes
+* None.
+
+##### New Features
+* Support Azure Entra ID as an OAuth2 Auth provider
+
+##### Enhancements
+* None.
+
+##### Fixes
+* Refresh token is now used in token refresh requests.
+
+##### Notes
+* None.
 ## [0.5.0]
 ##### Breaking Changes
 * There are 3 ways of specifying trusted TLS/SSL certificates when constructing a `ZepbenTokenFetcher`:

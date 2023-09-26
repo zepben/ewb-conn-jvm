@@ -49,12 +49,12 @@ import java.time.Instant
  * @property refreshToken Refresh Token; will be used if defined (fetched previously).
  * @property createBody a callback to turn the <*>RequestData into a string. AUTH0 requires JSON representation, where AZURE is query params.
  */
-data class ZepbenTokenFetcher(
+class ZepbenTokenFetcher(
     val audience: String,
     val issuerDomain: String,
     val authMethod: AuthMethod,
     val issuerProtocol: String = "https",
-    val tokenPath: String = "/oauth/token",
+    tokenPath: String = "/oauth/token",
     val tokenRequestData: JsonObject = JsonObject(),
     val refreshRequestData: JsonObject = JsonObject(),
     private val client: HttpClient = HttpClient.newHttpClient(),
@@ -62,9 +62,16 @@ data class ZepbenTokenFetcher(
     val requestContentType: String = "application/json",
     val createBody: (JsonObject) -> String = { it.toString() }
 ) {
+
     private var accessToken: String? = null
     private var tokenExpiry: Instant = Instant.MIN
     private var tokenType: String? = null
+
+    // Likewise add a slash to the tokenPath if one wasn't supplied.
+    private val tokenPath = tokenPath.takeIf { it.startsWith("/") } ?: "/$tokenPath"
+
+    // Remove any forward slashes from the end of the issuer to be compatible when joining with the tokenPath
+    internal val issuerURL = "${(issuerDomain.takeIf { it.startsWith("https://") } ?: "$issuerProtocol://$issuerDomain").trimEnd('/')}${this.tokenPath}"
 
     /**
      * Create a ZepbenTokenFetcher with the option of turning off certificate verification for the token provider.
@@ -174,7 +181,7 @@ data class ZepbenTokenFetcher(
             if (tokenType.isNullOrEmpty() or accessToken.isNullOrEmpty()) {
                 throw Exception(
                     "Token couldn't be retrieved from ${URL(issuerProtocol, issuerDomain, tokenPath)} using " +
-                    "configuration $authMethod, audience: $audience, token issuer: $issuerDomain"
+                        "configuration $authMethod, audience: $audience, token issuer: $issuerDomain"
                 )
             }
         }
@@ -188,12 +195,9 @@ data class ZepbenTokenFetcher(
             createBody(refreshRequestData)
         } else createBody(tokenRequestData)
 
-        val issuer = if (issuerDomain.startsWith("https://"))
-            issuerDomain
-        else "https://$issuerDomain"
 
         val request = HttpRequest.newBuilder()
-            .uri(URL("$issuer/$tokenPath").toURI())
+            .uri(URI(issuerURL))
             .header(CONTENT_TYPE, requestContentType)
             .POST(HttpRequest.BodyPublishers.ofString(body))
             .build()

@@ -382,4 +382,18 @@ internal class ZepbenTokenFetcherTest {
         )
     }
 
+    @Test
+    fun testNormalisationOfIssuerUrl(){
+        var tokenFetcher = ZepbenTokenFetcher("some_aud", "https://some_domain", AuthMethod.AUTH0)
+        assertThat(tokenFetcher.issuerURL, equalTo("https://some_domain/oauth/token"))
+        tokenFetcher = ZepbenTokenFetcher("some_aud", "https://some_domain/", AuthMethod.AUTH0)
+        assertThat(tokenFetcher.issuerURL, equalTo("https://some_domain/oauth/token"))
+        tokenFetcher = ZepbenTokenFetcher("some_aud", "some_domain/", AuthMethod.AUTH0)
+        assertThat(tokenFetcher.issuerURL, equalTo("https://some_domain/oauth/token"))
+        tokenFetcher = ZepbenTokenFetcher("some_aud", "some_domain/", AuthMethod.AUTH0, tokenPath = "some/path")
+        assertThat(tokenFetcher.issuerURL, equalTo("https://some_domain/some/path"))
+        tokenFetcher = ZepbenTokenFetcher("some_aud", "some_domain/", AuthMethod.AUTH0, issuerProtocol = "http" )
+        assertThat(tokenFetcher.issuerURL, equalTo("http://some_domain/oauth/token"))
+    }
+
 }
