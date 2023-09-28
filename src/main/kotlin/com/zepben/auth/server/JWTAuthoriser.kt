@@ -21,6 +21,15 @@ import com.auth0.jwt.interfaces.DecodedJWT
 import com.zepben.auth.common.StatusCode
 
 object JWTAuthoriser {
+
+    /**
+     * Authorise a JWT.
+     * This function will check that a JWT has the required claims. Claims will be extracted from the given [permissionsField].
+     *
+     * @param token The JWT
+     * @param requiredClaim The claim to authorise.
+     * @param permissionsField The field to extract claims from. Defaults to "permissions".
+     */
     @JvmStatic
     fun authorise(token: DecodedJWT, requiredClaim: String, permissionsField: String = "permissions"): AuthResponse {
         val permissions = token.getClaim(permissionsField).asList(String::class.java).toHashSet()
