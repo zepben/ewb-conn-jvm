@@ -5,6 +5,7 @@
 
 ##### New Features
 * Support Azure Entra ID as an OAuth2 Auth provider
+* Support passing in your own authorisation callback to AuthInterceptor.
 
 ##### Enhancements
 * None.
