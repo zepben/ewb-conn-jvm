@@ -22,6 +22,7 @@ import com.zepben.auth.common.AuthException
 import com.zepben.auth.common.AuthMethod
 import com.zepben.auth.common.StatusCode
 import com.zepben.auth.server.CONTENT_TYPE
+import com.zepben.auth.server.METADATA
 import io.vertx.core.json.DecodeException
 import io.vertx.core.json.Json
 import io.vertx.core.json.JsonObject
@@ -60,7 +61,14 @@ class ZepbenTokenFetcher(
     private val client: HttpClient = HttpClient.newHttpClient(),
     private var refreshToken: String? = null,
     val requestContentType: String = "application/json",
-    val createBody: (JsonObject) -> String = { it.toString() }
+    val requestBuilder: (String, String, String) -> HttpRequest = { issuerURL, requestContType, body ->
+        HttpRequest.newBuilder()
+            .uri(URI(issuerURL))
+            .header(CONTENT_TYPE, requestContType)
+            .POST(HttpRequest.BodyPublishers.ofString(body))
+            .build()
+    },
+    val createBody: (JsonObject) -> String = { it.toString() },
 ) {
 
     private var accessToken: String? = null
@@ -101,6 +109,13 @@ class ZepbenTokenFetcher(
         tokenPath: String? = null,
         tokenRequestData: JsonObject = JsonObject(),
         refreshRequestData: JsonObject = JsonObject(),
+        requestBuilder: (String, String, String) -> HttpRequest = { issuerURL, requestContType, body ->
+            HttpRequest.newBuilder()
+                .uri(URI(issuerURL))
+                .header(CONTENT_TYPE, requestContType)
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build()
+        },
         createBody: (JsonObject) -> String = { it.toString() }
     ) : this(
         audience = audience,
@@ -112,6 +127,7 @@ class ZepbenTokenFetcher(
         refreshRequestData = refreshRequestData,
         client = if (verifyCertificate) HttpClient.newHttpClient() else HttpClient.newBuilder().sslContext(SSLContextUtils.allTrustingSSLContext()).build(),
         requestContentType = requestContentType,
+        requestBuilder = requestBuilder,
         createBody = createBody
     )
 
@@ -141,6 +157,13 @@ class ZepbenTokenFetcher(
         tokenPath: String? = null,
         tokenRequestData: JsonObject = JsonObject(),
         refreshRequestData: JsonObject = JsonObject(),
+        requestBuilder: (String, String, String) -> HttpRequest = { issuerURL, requestContType, body ->
+            HttpRequest.newBuilder()
+                .uri(URI(issuerURL))
+                .header(CONTENT_TYPE, requestContType)
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build()
+        },
         createBody: (JsonObject) -> String = { it.toString() }
     ) : this(
         audience = audience,
@@ -154,6 +177,7 @@ class ZepbenTokenFetcher(
             HttpClient.newBuilder().sslContext(SSLContextUtils.singleCACertSSLContext(caFilename)).build()
         } ?: HttpClient.newHttpClient(),
         requestContentType = requestContentType,
+        requestBuilder = requestBuilder,
         createBody = createBody
     )
 
@@ -198,11 +222,7 @@ class ZepbenTokenFetcher(
         } else createBody(tokenRequestData)
 
 
-        val request = HttpRequest.newBuilder()
-            .uri(URI(issuerURL))
-            .header(CONTENT_TYPE, requestContentType)
-            .POST(HttpRequest.BodyPublishers.ofString(body))
-            .build()
+        val request = requestBuilder(issuerURL,  requestContentType, body)
         val response = client.send(request, HttpResponse.BodyHandlers.ofString())
 
         if (response.statusCode() != StatusCode.OK.code) {
@@ -271,6 +291,13 @@ fun createTokenFetcher(
     issuerDomainField: String = "issuerDomain",
     tokenPathField: String = "tokenPath",
     requestContentType: String? = null,
+    requestBuilder: (String, String, String) -> HttpRequest = { issuerURL, requestContType, body ->
+        HttpRequest.newBuilder()
+            .uri(URI(issuerURL))
+            .header(CONTENT_TYPE, requestContType)
+            .POST(HttpRequest.BodyPublishers.ofString(body))
+            .build()
+    },
     createBody: ((JsonObject) -> String)? = null,
 ): ZepbenTokenFetcher? {
     val request = HttpRequest.newBuilder().uri(URI(confAddress)).GET().build()
@@ -287,6 +314,7 @@ fun createTokenFetcher(
                     client = authClient,
                     requestContentType = contentType(authMethod, requestContentType),
                     tokenPath = authConfigJson.getString(tokenPathField),
+                    requestBuilder = requestBuilder,
                     createBody = createRequestBody(authMethod, createBody)
                 ).also {
                     if (it.authMethod == AuthMethod.AZURE) {
@@ -389,7 +417,14 @@ fun createTokenFetcher(
     audienceField: String = "audience",
     issuerDomainField: String = "issuerDomain",
     tokenPathField: String = "tokenPath",
-    verifyCertificates: Boolean = true
+    verifyCertificates: Boolean = true,
+    requestBuilder: (String, String, String) -> HttpRequest = { issuerURL, requestContType, body ->
+        HttpRequest.newBuilder()
+            .uri(URI(issuerURL))
+            .header(CONTENT_TYPE, requestContType)
+            .POST(HttpRequest.BodyPublishers.ofString(body))
+            .build()
+    },
 ) = createTokenFetcher(
     confAddress,
     confCAFilename?.let {
@@ -401,5 +436,15 @@ fun createTokenFetcher(
     authTypeField,
     audienceField,
     issuerDomainField,
-    tokenPathField
+    tokenPathField,
+    null,
+    requestBuilder
 )
+
+fun createTokenFetcherManagedIdentity(identityUrl: String) : ZepbenTokenFetcher = ZepbenTokenFetcher(audience = "", issuerDomain = "", authMethod = AuthMethod.AZURE, requestBuilder = { _, _, _ ->
+            HttpRequest.newBuilder()
+                .uri(URI(identityUrl))
+                .header("Metadata", "true")
+                .GET()
+                .build()
+        })

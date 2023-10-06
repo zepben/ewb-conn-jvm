@@ -37,6 +37,7 @@ import java.net.http.HttpResponse
 import javax.net.ssl.SSLContext
 
 internal class ZepbenTokenFetcherTest {
+
     private lateinit var server: TestHttpServer
     private var port = 8080
 
@@ -385,11 +386,13 @@ internal class ZepbenTokenFetcherTest {
     fun testCreateTokenFetcherWithCAFilenames() {
         mockkStatic("com.zepben.auth.client.ZepbenTokenFetcherKt")
         every {
-            createTokenFetcher("confAddress", secureConfClient, secureAuthClient, "authTypeField", "audienceField", "issuerDomainField")
+            createTokenFetcher("confAddress", secureConfClient, secureAuthClient, "authTypeField", "audienceField", "issuerDomainField", any(), any(), any())
         } returns secureTokenFetcher
 
         assertThat(
-            createTokenFetcher("confAddress", "confCAFilename", "authCAFilename", "authTypeField", "audienceField", "issuerDomainField"),
+            createTokenFetcher("confAddress", "confCAFilename", "authCAFilename", "authTypeField", "audienceField", "issuerDomainField", "", true) { _, _, _ ->
+                HttpRequest.newBuilder().build()
+            },
             equalTo(secureTokenFetcher)
         )
     }
@@ -398,17 +401,17 @@ internal class ZepbenTokenFetcherTest {
     fun testCreateTokenFetcherWithDefaultTls() {
         mockkStatic("com.zepben.auth.client.ZepbenTokenFetcherKt")
         every {
-            createTokenFetcher("confAddress", secureClient, secureClient, "authTypeField", "audienceField", "issuerDomainField")
+            createTokenFetcher("confAddress", secureClient, secureClient, "authTypeField", "audienceField", "issuerDomainField", any(), any(), any())
         } returns secureTokenFetcher
 
         assertThat(
-            createTokenFetcher("confAddress", authTypeField="authTypeField", audienceField="audienceField", issuerDomainField="issuerDomainField"),
-            equalTo(secureTokenFetcher)
+                createTokenFetcher ("confAddress", authTypeField = "authTypeField", audienceField = "audienceField", issuerDomainField = "issuerDomainField", tokenPathField = "", verifyCertificates = true, requestBuilder = { _, _, _ -> HttpRequest.newBuilder().build() }),
+        equalTo(secureTokenFetcher)
         )
     }
 
     @Test
-    fun testNormalisationOfIssuerUrl(){
+    fun testNormalisationOfIssuerUrl() {
         var tokenFetcher = ZepbenTokenFetcher("some_aud", "https://some_domain", AuthMethod.AUTH0)
         assertThat(tokenFetcher.issuerURL, equalTo("https://some_domain/oauth/token"))
         tokenFetcher = ZepbenTokenFetcher("some_aud", "https://some_domain/", AuthMethod.AUTH0)
@@ -417,7 +420,7 @@ internal class ZepbenTokenFetcherTest {
         assertThat(tokenFetcher.issuerURL, equalTo("https://some_domain/oauth/token"))
         tokenFetcher = ZepbenTokenFetcher("some_aud", "some_domain/", AuthMethod.AUTH0, tokenPath = "some/path")
         assertThat(tokenFetcher.issuerURL, equalTo("https://some_domain/some/path"))
-        tokenFetcher = ZepbenTokenFetcher("some_aud", "some_domain/", AuthMethod.AUTH0, issuerProtocol = "http" )
+        tokenFetcher = ZepbenTokenFetcher("some_aud", "some_domain/", AuthMethod.AUTH0, issuerProtocol = "http")
         assertThat(tokenFetcher.issuerURL, equalTo("http://some_domain/oauth/token"))
     }
 

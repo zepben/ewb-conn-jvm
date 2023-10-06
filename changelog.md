@@ -5,6 +5,7 @@
 
 ##### New Features
 * Support Azure Entra ID as an OAuth2 Auth provider
+* Support Azure Identity token fetcher
 * Support passing in your own authorisation callback to AuthInterceptor.
 
 ##### Enhancements
@@ -17,6 +18,7 @@
 
 ##### Notes
 * None.
+
 ## [0.5.0]
 ##### Breaking Changes
 * There are 3 ways of specifying trusted TLS/SSL certificates when constructing a `ZepbenTokenFetcher`:
