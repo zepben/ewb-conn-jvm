@@ -22,7 +22,6 @@ import com.zepben.auth.common.AuthException
 import com.zepben.auth.common.AuthMethod
 import com.zepben.auth.common.StatusCode
 import com.zepben.auth.server.CONTENT_TYPE
-import com.zepben.auth.server.METADATA
 import io.vertx.core.json.DecodeException
 import io.vertx.core.json.Json
 import io.vertx.core.json.JsonObject

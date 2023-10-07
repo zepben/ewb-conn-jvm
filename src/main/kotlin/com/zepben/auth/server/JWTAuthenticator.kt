@@ -31,7 +31,6 @@ import java.security.interfaces.RSAPublicKey
 const val WELL_KNOWN_JWKS_PATH = "/.well-known/jwks.json"
 const val AUTHORIZATION_HEADER = "Authorization"
 const val CONTENT_TYPE = "Content-Type"
-const val METADATA = "Metadata"
 
 data class AuthResponse(
     val statusCode: StatusCode,
