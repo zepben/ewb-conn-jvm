@@ -276,7 +276,7 @@ fun createTokenFetcher(
     if (response.statusCode() == StatusCode.OK.code) {
         try {
             val authConfigJson = Json.decodeValue(response.body()) as JsonObject
-            val authMethod = AuthMethod.valueOf(authConfigJson.getString(authTypeField))
+            val authMethod = AuthMethod.valueOf(authConfigJson.getString(authTypeField).uppercase())
             if (authMethod != AuthMethod.NONE) {
                 return ZepbenTokenFetcher(
                     audience = authConfigJson.getString(audienceField),
