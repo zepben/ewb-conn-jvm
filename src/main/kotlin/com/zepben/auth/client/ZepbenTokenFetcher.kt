@@ -54,7 +54,7 @@ class ZepbenTokenFetcher(
     val issuerDomain: String,
     val authMethod: AuthMethod,
     val issuerProtocol: String = "https",
-    tokenPath: String = "/oauth/token",
+    tokenPath: String? = null,
     val tokenRequestData: JsonObject = JsonObject(),
     val refreshRequestData: JsonObject = JsonObject(),
     private val client: HttpClient = HttpClient.newHttpClient(),
@@ -67,8 +67,10 @@ class ZepbenTokenFetcher(
     private var tokenExpiry: Instant = Instant.MIN
     private var tokenType: String? = null
 
-    // Likewise add a slash to the tokenPath if one wasn't supplied.
-    private val tokenPath = tokenPath.takeIf { it.startsWith("/") } ?: "/$tokenPath"
+    // Add a leading slash to the tokenPath if it doesn't have one. Default to "/oauth/token" if no tokenPath was given.
+    private val tokenPath =
+        if (tokenPath == null) "/oauth/token"
+        else tokenPath.takeIf { it.startsWith("/") } ?: "/$tokenPath"
 
     // Remove any forward slashes from the end of the issuer to be compatible when joining with the tokenPath
     internal val issuerURL = "${(issuerDomain.takeIf { it.startsWith("https://") } ?: "$issuerProtocol://$issuerDomain").trimEnd('/')}${this.tokenPath}"
@@ -96,7 +98,7 @@ class ZepbenTokenFetcher(
         verifyCertificate: Boolean,
         issuerProtocol: String = "https",
         requestContentType: String = "application/json",
-        tokenPath: String = "/oauth/token",
+        tokenPath: String? = null,
         tokenRequestData: JsonObject = JsonObject(),
         refreshRequestData: JsonObject = JsonObject(),
         createBody: (JsonObject) -> String = { it.toString() }
@@ -136,7 +138,7 @@ class ZepbenTokenFetcher(
         caFilename: String?,
         issuerProtocol: String = "https",
         requestContentType: String = "application/json",
-        tokenPath: String = "/oauth/token",
+        tokenPath: String? = null,
         tokenRequestData: JsonObject = JsonObject(),
         refreshRequestData: JsonObject = JsonObject(),
         createBody: (JsonObject) -> String = { it.toString() }
@@ -276,7 +278,7 @@ fun createTokenFetcher(
     if (response.statusCode() == StatusCode.OK.code) {
         try {
             val authConfigJson = Json.decodeValue(response.body()) as JsonObject
-            val authMethod = AuthMethod.valueOf(authConfigJson.getString(authTypeField))
+            val authMethod = AuthMethod.valueOf(authConfigJson.getString(authTypeField).uppercase())
             if (authMethod != AuthMethod.NONE) {
                 return ZepbenTokenFetcher(
                     audience = authConfigJson.getString(audienceField),

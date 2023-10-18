@@ -8,10 +8,12 @@
 * Support passing in your own authorisation callback to AuthInterceptor.
 
 ##### Enhancements
-* None.
+* `createTokenFetcher` now matches the authentication method (e.g. `OAUTH`) in the auth config JSON in a
+  case-insensitive manner.
 
 ##### Fixes
 * Refresh token is now used in token refresh requests.
+* `createTokenFetcher` now defaults the token path to `\oauth\token` if it is unspecified in the auth config JSON.
 
 ##### Notes
 * None.
