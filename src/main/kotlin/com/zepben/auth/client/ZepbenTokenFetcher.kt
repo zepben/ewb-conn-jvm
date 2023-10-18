@@ -67,8 +67,10 @@ class ZepbenTokenFetcher(
     private var tokenExpiry: Instant = Instant.MIN
     private var tokenType: String? = null
 
-    // Likewise add a slash to the tokenPath if one wasn't supplied.
-    private val tokenPath = tokenPath?.takeIf { it.startsWith("/") } ?: tokenPath?.let { "/$it" } ?: "/oauth/token"
+    // Add a leading slash to the tokenPath if it doesn't have one. Default to "/oauth/token" if no tokenPath was given.
+    private val tokenPath =
+        if (tokenPath == null) "/oauth/token"
+        else tokenPath.takeIf { it.startsWith("/") } ?: "/$tokenPath"
 
     // Remove any forward slashes from the end of the issuer to be compatible when joining with the tokenPath
     internal val issuerURL = "${(issuerDomain.takeIf { it.startsWith("https://") } ?: "$issuerProtocol://$issuerDomain").trimEnd('/')}${this.tokenPath}"
