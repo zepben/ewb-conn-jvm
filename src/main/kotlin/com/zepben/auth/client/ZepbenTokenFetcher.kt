@@ -54,7 +54,7 @@ class ZepbenTokenFetcher(
     val issuerDomain: String,
     val authMethod: AuthMethod,
     val issuerProtocol: String = "https",
-    tokenPath: String = "/oauth/token",
+    tokenPath: String? = null,
     val tokenRequestData: JsonObject = JsonObject(),
     val refreshRequestData: JsonObject = JsonObject(),
     private val client: HttpClient = HttpClient.newHttpClient(),
@@ -68,7 +68,7 @@ class ZepbenTokenFetcher(
     private var tokenType: String? = null
 
     // Likewise add a slash to the tokenPath if one wasn't supplied.
-    private val tokenPath = tokenPath.takeIf { it.startsWith("/") } ?: "/$tokenPath"
+    private val tokenPath = tokenPath?.takeIf { it.startsWith("/") } ?: tokenPath?.let { "/$it" } ?: "/oauth/token"
 
     // Remove any forward slashes from the end of the issuer to be compatible when joining with the tokenPath
     internal val issuerURL = "${(issuerDomain.takeIf { it.startsWith("https://") } ?: "$issuerProtocol://$issuerDomain").trimEnd('/')}${this.tokenPath}"
@@ -96,7 +96,7 @@ class ZepbenTokenFetcher(
         verifyCertificate: Boolean,
         issuerProtocol: String = "https",
         requestContentType: String = "application/json",
-        tokenPath: String = "/oauth/token",
+        tokenPath: String? = null,
         tokenRequestData: JsonObject = JsonObject(),
         refreshRequestData: JsonObject = JsonObject(),
         createBody: (JsonObject) -> String = { it.toString() }
@@ -136,7 +136,7 @@ class ZepbenTokenFetcher(
         caFilename: String?,
         issuerProtocol: String = "https",
         requestContentType: String = "application/json",
-        tokenPath: String = "/oauth/token",
+        tokenPath: String? = null,
         tokenRequestData: JsonObject = JsonObject(),
         refreshRequestData: JsonObject = JsonObject(),
         createBody: (JsonObject) -> String = { it.toString() }
