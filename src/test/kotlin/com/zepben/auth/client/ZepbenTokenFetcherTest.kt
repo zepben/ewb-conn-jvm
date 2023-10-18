@@ -107,6 +107,18 @@ internal class ZepbenTokenFetcherTest {
     }
 
     @Test
+    fun testCreateTokenFetcherLowercaseAuthType() {
+        doReturn(StatusCode.OK.code).`when`(response).statusCode()
+        doReturn(
+            "{\"authType\": \"oauth\", \"audience\": \"test_audience\", \"issuerDomain\": \"test_issuer\", \"tokenPath\": \"/oauth/token\"}"
+        ).`when`(response).body()
+
+        val tokenFetcher = createTokenFetcher("https://testaddress", confClient = client, authClient = client)
+        verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
+        assertThat(tokenFetcher?.authMethod, equalTo(AuthMethod.OAUTH))
+    }
+
+    @Test
     fun testCreateTokenFetcherNoAuth() {
         doReturn(StatusCode.OK.code).`when`(response).statusCode()
         doReturn(
