@@ -440,7 +440,14 @@ fun createTokenFetcher(
     requestBuilder
 )
 
-fun createTokenFetcherManagedIdentity(identityUrl: String) : ZepbenTokenFetcher = ZepbenTokenFetcher(audience = "", issuerDomain = "", authMethod = AuthMethod.AZURE, requestBuilder = { _, _, _ ->
+/**
+ * Create a token fetcher which uses an Azure managed identity to fetch tokens from a well known token provider endpoint.
+ *
+ * @param identityUrl The URL to use for fetching a token. Typically a well known URL like:
+ * http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=<SOME_RESOURCE_ID>
+ */
+fun createTokenFetcherManagedIdentity(identityUrl: String) : ZepbenTokenFetcher =
+    ZepbenTokenFetcher(audience = "", issuerDomain = "", authMethod = AuthMethod.AZURE, requestBuilder = { _, _, _ ->
             HttpRequest.newBuilder()
                 .uri(URI(identityUrl))
                 .header("Metadata", "true")

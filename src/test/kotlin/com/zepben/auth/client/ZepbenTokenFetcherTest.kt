@@ -23,6 +23,7 @@ import com.zepben.testutils.auth.TOKEN
 import com.zepben.testutils.exception.ExpectException.expect
 import com.zepben.testutils.vertx.TestHttpServer
 import io.mockk.*
+import org.hamcrest.CoreMatchers.notNullValue
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.core.IsEqual.equalTo
 import org.junit.jupiter.api.AfterEach
@@ -177,6 +178,13 @@ internal class ZepbenTokenFetcherTest {
                 verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
                 assertThat(statusCode, equalTo(StatusCode.OK.code))
             }
+    }
+
+    @Test
+    fun testCreateTokenFetcherManagedIdentity() {
+        val tokenFetcher = createTokenFetcherManagedIdentity("https://testaddress")
+        assertThat(tokenFetcher, notNullValue())
+        assertThat(tokenFetcher.authMethod, equalTo(AuthMethod.AZURE))
     }
 
     @Test
