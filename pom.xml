@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.zepben.maven</groupId>
         <artifactId>evolve-super-pom</artifactId>
-        <version>0.26.0</version>
+        <version>0.33.0</version>
     </parent>
 
     <groupId>com.zepben.evolve</groupId>
@@ -63,7 +63,6 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jacoco.coverage>0.2</jacoco.coverage>
-        <ewb.grpc.version>1.0.0</ewb.grpc.version>
     </properties>
 
     <dependencies>
@@ -187,7 +186,6 @@
         <dependency>
             <groupId>io.mockk</groupId>
             <artifactId>mockk</artifactId>
-            <version>1.12.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
