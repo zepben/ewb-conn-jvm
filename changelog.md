@@ -1,5 +1,5 @@
 # Evolve SDK connection library
-## [0.7.0] - UNRELEASED
+## [0.7.0] - 2023-11-10
 ##### Breaking Changes
 * None.
 
