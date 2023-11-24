@@ -20,7 +20,7 @@ import com.zepben.auth.common.AuthException
 import com.zepben.auth.common.AuthMethod
 import com.zepben.auth.common.StatusCode
 import com.zepben.testutils.auth.TOKEN
-import com.zepben.testutils.exception.ExpectException.expect
+import com.zepben.testutils.exception.ExpectException.Companion.expect
 import com.zepben.testutils.vertx.TestHttpServer
 import io.mockk.*
 import org.hamcrest.CoreMatchers.notNullValue
@@ -141,7 +141,7 @@ internal class ZepbenTokenFetcherTest {
             createTokenFetcher("https://testaddress", confClient = client, authClient = client)
         }.toThrow(AuthException::class.java)
             .withMessage("https://testaddress responded with error: 404 - Not found")
-            .exception()
+            .exception
             .apply {
                 verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
                 assertThat(statusCode, equalTo(StatusCode.NOT_FOUND.code))
@@ -157,7 +157,7 @@ internal class ZepbenTokenFetcherTest {
             createTokenFetcher("https://testaddress", confClient = client, authClient = client)
         }.toThrow(AuthException::class.java)
             .withMessage("Expected JSON response from https://testaddress, but got: test text.")
-            .exception()
+            .exception
             .apply {
                 verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
                 assertThat(statusCode, equalTo(StatusCode.OK.code))
@@ -173,7 +173,7 @@ internal class ZepbenTokenFetcherTest {
             createTokenFetcher("https://testaddress", confClient = client, authClient = client)
         }.toThrow(AuthException::class.java)
             .withMessage("Expected JSON object from https://testaddress, but got: [\"authType\"].")
-            .exception()
+            .exception
             .apply {
                 verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
                 assertThat(statusCode, equalTo(StatusCode.OK.code))
@@ -224,7 +224,7 @@ internal class ZepbenTokenFetcherTest {
             tokenFetcher.fetchToken()
         }.toThrow(AuthException::class.java)
             .withMessage("Token fetch failed, Error was: 404 - test text")
-            .exception()
+            .exception
             .apply {
                 verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
                 assertThat(statusCode, equalTo(StatusCode.NOT_FOUND.code))
@@ -249,7 +249,7 @@ internal class ZepbenTokenFetcherTest {
             tokenFetcher.fetchToken()
         }.toThrow(AuthException::class.java)
             .withMessage("Response did not contain valid JSON - response was: test text")
-            .exception()
+            .exception
             .apply {
                 verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
                 assertThat(statusCode, equalTo(StatusCode.OK.code))
@@ -274,7 +274,7 @@ internal class ZepbenTokenFetcherTest {
             tokenFetcher.fetchToken()
         }.toThrow(AuthException::class.java)
             .withMessage("Response was not a JSON object - response was: [\"test text\"]")
-            .exception()
+            .exception
             .apply {
                 verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
                 assertThat(statusCode, equalTo(StatusCode.OK.code))
@@ -299,7 +299,7 @@ internal class ZepbenTokenFetcherTest {
             tokenFetcher.fetchToken()
         }.toThrow(AuthException::class.java)
             .withMessage("Access Token absent in token response - Response was: {\"test\":\"fail\"}")
-            .exception()
+            .exception
             .apply {
                 verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
                 assertThat(statusCode, equalTo(StatusCode.OK.code))
