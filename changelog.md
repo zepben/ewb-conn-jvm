@@ -1,7 +1,11 @@
 # Evolve SDK connection library
 ## [0.8.0] - UNRELEASED
 ### Breaking Changes
-* None.
+* Use super pom version 0.34.x, which uses Vert.x version 4.4.6 (major version change 3 &rarr; 4).
+* Removed unused classes from `com.zepben.auth.server`:
+  * `AuthConfigRoute`
+  * `vertx.JWTAuthProvider`
+  * `vertx.User`
 
 ### New Features
 * None.
