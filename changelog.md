@@ -2,10 +2,7 @@
 ## [0.8.0] - UNRELEASED
 ### Breaking Changes
 * Use super pom version 0.34.x, which uses Vert.x version 4.4.6 (major version change 3 &rarr; 4).
-* Removed unused classes from `com.zepben.auth.server`:
-  * `AuthConfigRoute`
-  * `vertx.JWTAuthProvider`
-  * `vertx.User`
+* Removed unused module `com.zepben.auth.server.vertx`
 
 ### New Features
 * None.
