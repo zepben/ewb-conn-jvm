@@ -17,32 +17,35 @@ import io.vertx.core.AsyncResult
 import io.vertx.core.Future
 import io.vertx.core.Handler
 import io.vertx.core.json.JsonObject
-import io.vertx.ext.auth.AuthProvider
 import io.vertx.ext.auth.User
-import io.vertx.kotlin.core.json.get
+import io.vertx.ext.auth.authentication.AuthenticationProvider
+import io.vertx.ext.auth.authentication.Credentials
 
 /**
- * An implementation of an [AuthProvider] that performs JWT authentication with the provided [tokenAuthenticator]
+ * An implementation of an [AuthenticationProvider] that performs JWT authentication with the provided [tokenAuthenticator]
  *
  * @property tokenAuthenticator The Authenticator to use for authentication.
  */
-class JWTAuthProvider(private val tokenAuthenticator: TokenAuthenticator) : AuthProvider {
+class JWTAuthProvider(private val tokenAuthenticator: TokenAuthenticator) : AuthenticationProvider {
+
+    @Deprecated("Deprecated in Java")
+    override fun authenticate(authInfo: JsonObject?, resultHandler: Handler<AsyncResult<User>>?) {
+        val token: String? = authInfo?.getString("jwt")
+        val resp = tokenAuthenticator.authenticate(token)
+        if (resp.statusCode !== StatusCode.OK) {
+            resultHandler?.handle(Future.failedFuture(resp.asHttpException()))
+            return
+        }
+
+        resp.token?.let { resultHandler?.handle(Future.succeededFuture(User.fromToken(it.token))) } ?: resultHandler?.handle(
+            Future.failedFuture("Token was missing on successful auth - this is a bug.")
+        )
+    }
 
     /**
      * Authenticate a client based on the provided [authInfo].
      * @param A [JsonObject] with a "jwt" entry with the JWT for this client.
      */
-    override fun authenticate(authInfo: JsonObject?, resultHandler: Handler<AsyncResult<User>>) {
-        val token: String? = authInfo?.get("jwt")
-        val resp = tokenAuthenticator.authenticate(token)
-        if (resp.statusCode !== StatusCode.OK) {
-            resultHandler.handle(Future.failedFuture(resp.asHttpException()))
-            return
-        }
-
-        resp.token?.let { resultHandler.handle(Future.succeededFuture(User.fromToken(it.token))) } ?: resultHandler.handle(
-            Future.failedFuture("Token was missing on successful auth - this is a bug.")
-        )
-    }
+    override fun authenticate(credentials: Credentials?, resultHandler: Handler<AsyncResult<User>>?) = authenticate(credentials?.toJson(), resultHandler)
 
 }

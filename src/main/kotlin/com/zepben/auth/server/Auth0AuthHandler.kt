@@ -17,15 +17,14 @@ import io.vertx.core.http.HttpHeaders
 import io.vertx.core.http.HttpMethod
 import io.vertx.core.json.JsonObject
 import io.vertx.ext.auth.User
+import io.vertx.ext.auth.authorization.RoleBasedAuthorization
+import io.vertx.ext.auth.authorization.WildcardPermissionBasedAuthorization
 import io.vertx.ext.web.RoutingContext
 import io.vertx.ext.web.handler.AuthenticationHandler
 import io.vertx.ext.web.handler.HttpException
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
-
 
 class Auth0AuthHandler(
-    val authProvider: JWTAuthProvider,
+    private val authProvider: JWTAuthProvider,
     requiredClaims: Set<String>,
     private val skip: String? = null
 ) :
@@ -37,51 +36,31 @@ class Auth0AuthHandler(
         addAuthorities(requiredClaims)
     }
 
-    private fun addAuthority(authority: String): Auth0AuthHandler {
-        authorities.add(authority)
-        return this
-    }
-
     private fun addAuthorities(authorities: Set<String>): Auth0AuthHandler {
         this.authorities.addAll(authorities)
         return this
     }
 
     private fun authorize(user: User?, handler: Handler<AsyncResult<Void?>>) {
-        val requiredCount = authorities.size
-        if (requiredCount > 0) {
-            if (user == null) {
-                handler.handle(Future.failedFuture(HttpException(403, "No user was found, you must authenticate first")))
-                return
-            }
-            val count = AtomicInteger()
-            val sentFailure = AtomicBoolean()
-            val authHandler =
-                Handler { res: AsyncResult<Boolean> ->
-                    if (res.succeeded()) {
-                        if (res.result()) {
-                            if (count.incrementAndGet() == requiredCount) {
-                                // Has all required authorities
-                                handler.handle(Future.succeededFuture())
-                            }
-                        } else {
-                            if (sentFailure.compareAndSet(false, true)) {
-                                handler.handle(Future.failedFuture(HttpException(403, "Could not authorise all requested permissions. This is likely a bug.")))
-                            }
-                        }
-                    } else {
-                        handler.handle(Future.failedFuture(res.cause()))
-                    }
-                }
-            for (authority in authorities) {
-                if (!sentFailure.get()) {
-                    user.isAuthorized(authority, authHandler)
-                }
-            }
-        } else {
+        if (authorities.isEmpty()) {
             // No auth required
             handler.handle(Future.succeededFuture())
+            return
         }
+        if (user == null) {
+            handler.handle(Future.failedFuture(HttpException(403, "No user was found, you must authenticate first")))
+            return
+        }
+        for (authority in authorities) {
+            val authorization =
+                if (authority.startsWith("role:")) RoleBasedAuthorization.create(authority.substring(5))
+                else WildcardPermissionBasedAuthorization.create(authority)
+            if (!authorization.match(user)) {
+                handler.handle(Future.failedFuture(HttpException(403, "Could not authorise all requested permissions. This is likely a bug.")))
+                return
+            }
+        }
+        handler.handle(Future.succeededFuture())
     }
 
     override fun handle(ctx: RoutingContext) {
@@ -111,9 +90,7 @@ class Auth0AuthHandler(
             }
 
             // proceed to authN
-            authProvider.authenticate(
-                res.result()
-            ) { authN: AsyncResult<User> ->
+            authProvider.authenticate({ res.result() }) { authN: AsyncResult<User> ->
                 if (authN.succeeded()) {
                     val authenticated = authN.result()
                     ctx.setUser(authenticated)
@@ -176,14 +153,14 @@ class Auth0AuthHandler(
         // See: https://www.w3.org/TR/cors/#cross-origin-request-with-preflight-0
         // Preflight requests should not be subject to security due to the reason UAs will remove the Authorization header
         if (request.method() == HttpMethod.OPTIONS) {
-            // check if there is a access control request header
+            // check if there is an access control request header
             val accessControlRequestHeader =
                 ctx.request().getHeader(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS)
             if (accessControlRequestHeader != null) {
                 // lookup for the Authorization header
                 for (ctrlReq in accessControlRequestHeader.split(",".toRegex()).toTypedArray()) {
                     if (ctrlReq.equals("Authorization", ignoreCase = true)) {
-                        // this request has auth in access control, so we can allow preflighs without authentication
+                        // this request has auth in access control, so we can allow preflights without authentication
                         ctx.next()
                         return true
                     }
@@ -224,7 +201,7 @@ class Auth0AuthHandler(
 
     private fun parseCredentials(context: RoutingContext?, handler: Handler<AsyncResult<JsonObject>>?) {
 
-        if (skip != null && context!!.normalisedPath().startsWith(skip)) {
+        if (skip != null && context!!.normalizedPath().startsWith(skip)) {
             context.next()
             return
         }
