@@ -21,7 +21,7 @@ import io.vertx.ext.web.RoutingContext
 
 private data class AuthConfigResponse(
     val authType: AuthMethod,
-    val issuerDomain: String,
+    val issuer: String,
     val audience: String,
     val tokenPath: String,
     val algorithm: String = "RS256"
