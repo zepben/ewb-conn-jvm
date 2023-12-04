@@ -1,4 +1,20 @@
 # Evolve SDK connection library
+## [0.7.1] - UNRELEASED
+### Breaking Changes
+* None.
+
+### New Features
+* None.
+
+### Enhancements
+* None.
+
+### Fixes
+* None.
+
+### Notes
+* None.
+
 ## [0.7.0] - 2023-11-10
 ##### Breaking Changes
 * None.
