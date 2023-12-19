@@ -3,6 +3,7 @@
 ### Breaking Changes
 * Use super pom version 0.34.x, which uses Vert.x version 4.4.6 (major version change 3 &rarr; 4).
 * Removed unused module `com.zepben.auth.server.vertx`
+* `AuthConfigRoute` now expects the key `issuer` instead of `issuerDomain` for the OAuth provider's hostname.
 
 ### New Features
 * None.
