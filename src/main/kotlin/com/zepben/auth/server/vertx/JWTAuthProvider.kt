@@ -1,18 +1,10 @@
-// Copyright 2019 Zeppelin Bend Pty Ltd
-// This file is part of zepben-auth.
-//
-// zepben-auth is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// zepben-auth is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with zepben-auth.  If not, see <https://www.gnu.org/licenses/>.
+/*
+ * Copyright 2023 Zeppelin Bend Pty Ltd
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
 
 
 package com.zepben.auth.server.vertx
@@ -25,32 +17,35 @@ import io.vertx.core.AsyncResult
 import io.vertx.core.Future
 import io.vertx.core.Handler
 import io.vertx.core.json.JsonObject
-import io.vertx.ext.auth.AuthProvider
 import io.vertx.ext.auth.User
-import io.vertx.kotlin.core.json.get
+import io.vertx.ext.auth.authentication.AuthenticationProvider
+import io.vertx.ext.auth.authentication.Credentials
 
 /**
- * An implementation of an [AuthProvider] that performs JWT authentication with the provided [tokenAuthenticator]
+ * An implementation of an [AuthenticationProvider] that performs JWT authentication with the provided [tokenAuthenticator]
  *
- * @property tokenAuthenticator The Authenticator to use for for authentication.
+ * @property tokenAuthenticator The Authenticator to use for authentication.
  */
-class JWTAuthProvider(private val tokenAuthenticator: TokenAuthenticator) : AuthProvider {
+class JWTAuthProvider(private val tokenAuthenticator: TokenAuthenticator) : AuthenticationProvider {
+
+    @Deprecated("Deprecated in Java")
+    override fun authenticate(authInfo: JsonObject?, resultHandler: Handler<AsyncResult<User>>?) {
+        val token: String? = authInfo?.getString("jwt")
+        val resp = tokenAuthenticator.authenticate(token)
+        if (resp.statusCode !== StatusCode.OK) {
+            resultHandler?.handle(Future.failedFuture(resp.asHttpException()))
+            return
+        }
+
+        resp.token?.let { resultHandler?.handle(Future.succeededFuture(User.fromToken(it.token))) } ?: resultHandler?.handle(
+            Future.failedFuture("Token was missing on successful auth - this is a bug.")
+        )
+    }
 
     /**
      * Authenticate a client based on the provided [authInfo].
      * @param A [JsonObject] with a "jwt" entry with the JWT for this client.
      */
-    override fun authenticate(authInfo: JsonObject?, resultHandler: Handler<AsyncResult<User>>) {
-        val token: String? = authInfo?.get("jwt")
-        val resp = tokenAuthenticator.authenticate(token)
-        if (resp.statusCode !== StatusCode.OK) {
-            resultHandler.handle(Future.failedFuture(resp.asHttpException()))
-            return
-        }
-
-        resp.token?.let { resultHandler.handle(Future.succeededFuture(User(it))) } ?: resultHandler.handle(
-            Future.failedFuture("Token was missing on successful auth - this is a bug.")
-        )
-    }
+    override fun authenticate(credentials: Credentials?, resultHandler: Handler<AsyncResult<User>>?) = authenticate(credentials?.toJson(), resultHandler)
 
 }

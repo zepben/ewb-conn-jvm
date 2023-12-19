@@ -25,7 +25,7 @@ import com.auth0.jwt.exceptions.*
 import com.auth0.jwt.interfaces.DecodedJWT
 import com.zepben.auth.common.AuthException
 import com.zepben.auth.common.StatusCode
-import io.vertx.ext.web.handler.impl.HttpStatusException
+import io.vertx.ext.web.handler.HttpException
 import java.security.interfaces.RSAPublicKey
 
 const val WELL_KNOWN_JWKS_PATH = "/.well-known/jwks.json"
@@ -40,7 +40,7 @@ data class AuthResponse(
 )
 
 fun AuthResponse.asException(): AuthException = AuthException(statusCode.code, message)
-fun AuthResponse.asHttpException(): HttpStatusException = HttpStatusException(statusCode.code, message)
+fun AuthResponse.asHttpException(): HttpException = HttpException(statusCode.code, message)
 
 interface TokenAuthenticator {
     fun authenticate(token: String?): AuthResponse
@@ -107,5 +107,3 @@ open class JWTAuthenticator(
             }
         }
 }
-
-
