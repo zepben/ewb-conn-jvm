@@ -21,8 +21,11 @@ import com.zepben.auth.common.AuthMethod
 import com.zepben.auth.common.StatusCode
 import com.zepben.testutils.auth.TOKEN
 import com.zepben.testutils.exception.ExpectException.Companion.expect
-import com.zepben.testutils.vertx.TestHttpServer
-import io.mockk.*
+import com.zepben.vertxutils.testing.TestHttpServer
+import io.mockk.every
+import io.mockk.mockkObject
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
 import org.hamcrest.CoreMatchers.notNullValue
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.core.IsEqual.equalTo

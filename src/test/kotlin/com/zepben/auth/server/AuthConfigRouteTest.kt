@@ -11,8 +11,8 @@ package com.zepben.auth.server
 
 
 import com.zepben.auth.common.AuthMethod
-import com.zepben.testutils.vertx.TestHttpServer
 import com.zepben.vertxutils.routing.RouteVersionUtils
+import com.zepben.vertxutils.testing.TestHttpServer
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.restassured.RestAssured
 import io.vertx.core.json.JsonObject
