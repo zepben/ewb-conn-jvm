@@ -1,4 +1,20 @@
 # Evolve SDK connection library
+## [0.9.0] - UNRELEASED
+### Breaking Changes
+* None.
+
+### New Features
+* None.
+
+### Enhancements
+* None.
+
+### Fixes
+* None.
+
+### Notes
+* None.
+
 ## [0.8.0] - 2024-04-08
 ### Breaking Changes
 * Use super pom version 0.34.x, which uses Vert.x version 4.4.6 (major version change 3 &rarr; 4).
