@@ -39,8 +39,9 @@ class AuthRoute {
             audience: String,
             jwkProvider: UrlJwkProvider,
             issuer: String,
+            permissionsField: String,
             requiredClaims: Iterable<String> = emptySet(),
-            isRegexPath: Boolean = false
+            isRegexPath: Boolean = false,
         ): (AvailableRoute) -> Route =
             { availableRoute ->
                 when (availableRoute) {
@@ -52,7 +53,8 @@ class AuthRoute {
                             .addHandler(
                                 Auth0AuthHandler(
                                     JWTAuthProvider(JWTAuthenticator(audience, issuer, jwkProvider)),
-                                    mutableSetOf<String>().apply { addAll(requiredClaims) }
+                                    mutableSetOf<String>().apply { addAll(requiredClaims) },
+                                    permissionsField = permissionsField
                                 )
                             )
                             .build()
