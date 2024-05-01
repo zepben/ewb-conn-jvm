@@ -9,7 +9,6 @@
 
 package com.zepben.auth.server
 
-
 import com.zepben.auth.common.AuthMethod
 import com.zepben.vertxutils.routing.RouteVersionUtils
 import com.zepben.vertxutils.testing.TestHttpServer
@@ -21,7 +20,8 @@ import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-class AuthConfigRouteTest {
+class AuthProviderConfigRouteTest {
+
     private var server: TestHttpServer? = null
     private var port = 8080
 
@@ -29,9 +29,16 @@ class AuthConfigRouteTest {
     fun before() {
         server = TestHttpServer().addRoutes(
             RouteVersionUtils.forVersion(
-                AvailableRoute.values(),
+                AvailableRoute.entries.toTypedArray(),
                 2
-            ) { routeFactory(it, "test-audience", "test-issuer", "test-token-path", AuthMethod.AUTH0) }
+            ) {
+                routeFactory(
+                    it,
+                    audience = "test-audience",
+                    issuer = "test-issuer",
+                    authType = AuthMethod.AUTH0,
+                )
+            }
         )
         port = server!!.listen()
     }
@@ -40,10 +47,8 @@ class AuthConfigRouteTest {
     fun testHandle() {
         val expectedResponse: String = JsonObject().apply {
             put("authType", AuthMethod.AUTH0)
-            put("issuerDomain", "test-issuer")
+            put("issuer", "test-issuer")
             put("audience", "test-audience")
-            put("tokenPath", "test-token-path")
-            put("algorithm", "RS256")
         }.encode()
 
         val response = RestAssured.given()
