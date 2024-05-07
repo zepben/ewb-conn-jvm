@@ -12,6 +12,7 @@
 ### Fixes
 * Evolve-conn allowed the customization of the claim where permissions should be retrieved from. 
   This functionality only worked for gRPC requests. It has now been patched to work for HTTP requests as well
+* AuthMethod Azure is renamed to EntraID
 
 ### Notes
 * None.

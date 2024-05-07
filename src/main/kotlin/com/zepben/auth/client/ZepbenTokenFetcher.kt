@@ -316,7 +316,7 @@ fun createTokenFetcher(
                     requestBuilder = requestBuilder,
                     createBody = createRequestBody(authMethod, createBody)
                 ).also {
-                    if (it.authMethod == AuthMethod.AZURE) {
+                    if (it.authMethod == AuthMethod.ENTRAID) {
                         it.tokenRequestData.put("scope", "${it.audience}/.default")
                         it.refreshRequestData.put("scope", "${it.audience}/.default")
                     }
@@ -346,7 +346,7 @@ private fun contentType(authMethod: AuthMethod, requestContentType: String?): St
     if (!requestContentType.isNullOrEmpty())
         return requestContentType
 
-    return if (authMethod == AuthMethod.AZURE)
+    return if (authMethod == AuthMethod.ENTRAID)
         "application/x-www-form-urlencoded"
     else "application/json"
 }
@@ -355,7 +355,7 @@ private fun createRequestBody(authMethod: AuthMethod, createBody: ((JsonObject) 
     if (createBody != null)
         return createBody
 
-    return if (authMethod == AuthMethod.AZURE)
+    return if (authMethod == AuthMethod.ENTRAID)
         { it -> it.joinToString("&") { m -> "${m.key}=${m.value}" } }
     else { it -> it.toString() }
 }
@@ -447,7 +447,7 @@ fun createTokenFetcher(
  * http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=<SOME_RESOURCE_ID>
  */
 fun createTokenFetcherManagedIdentity(identityUrl: String) : ZepbenTokenFetcher =
-    ZepbenTokenFetcher(audience = "", issuerDomain = "", authMethod = AuthMethod.AZURE, requestBuilder = { _, _, _ ->
+    ZepbenTokenFetcher(audience = "", issuerDomain = "", authMethod = AuthMethod.ENTRAID, requestBuilder = { _, _, _ ->
             HttpRequest.newBuilder()
                 .uri(URI(identityUrl))
                 .header("Metadata", "true")
