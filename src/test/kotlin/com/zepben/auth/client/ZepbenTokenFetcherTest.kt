@@ -187,7 +187,7 @@ internal class ZepbenTokenFetcherTest {
     fun testCreateTokenFetcherManagedIdentity() {
         val tokenFetcher = createTokenFetcherManagedIdentity("https://testaddress")
         assertThat(tokenFetcher, notNullValue())
-        assertThat(tokenFetcher.authMethod, equalTo(AuthMethod.AZURE))
+        assertThat(tokenFetcher.authMethod, equalTo(AuthMethod.ENTRAID))
     }
 
     @Test

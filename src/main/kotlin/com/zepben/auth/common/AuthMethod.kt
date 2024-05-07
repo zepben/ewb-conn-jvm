@@ -26,5 +26,5 @@ enum class AuthMethod {
     SELF,
     OAUTH,
     AUTH0,
-    AZURE
+    ENTRAID
 }
