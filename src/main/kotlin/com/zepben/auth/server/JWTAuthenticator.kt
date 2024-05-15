@@ -64,9 +64,9 @@ open class JWTAuthenticator(
 
     private fun refreshJwk() = jwkProvider.all.associateBy { it.id }
 
-    private fun getKeyFromJwk(kid: String): Jwk =
+    internal fun getKeyFromJwk(kid: String): Jwk =
         keys[kid] ?: run {
-            refreshJwk()
+            keys = refreshJwk()
             keys[kid] ?: throw JwkException("Unable to find key $kid in jwk endpoint. Check your JWK URL.")
         }
 
