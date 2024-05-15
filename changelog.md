@@ -2,6 +2,7 @@
 ## [0.9.1] - UNRELEASED
 ### Fixes
 * Revert AuthConfigRoute to use `issuerDomain` rather than `issuer`.
+* Correctly refresh and store JWK keys on request
 
 ## [0.9.0] - 2024-05-14
 ### Breaking Changes
