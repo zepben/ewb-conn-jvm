@@ -40,19 +40,20 @@ data class GrpcAuthResp(val status: Status, val token: DecodedJWT? = null)
  * Intercepts, authenticates, and authorises gRPC calls.
  *
  * @property tokenAuthenticator The [TokenAuthenticator] to use for authenticating tokens.
- * @property requiredScopes A map of gRPC descriptors to their corresponding required scope.
+ * @param requiredScopes A map of gRPC descriptors (fullMethodName) to their corresponding required scopes. If an empty set of scopes is provided, no authorisation
+ * is necessary for the provided descriptor.
  * @param permissionsKey The key to use when looking up claims in the token.
- * @property authorise Callback to authorise a taken. Will be provided with the gRPC service name as per [serverCall.methodDescriptor.serviceName] and the JWT.
+ * @property authorise Callback to authorise a taken. Will be provided with the gRPC method name as per [serverCall.methodDescriptor.fullMethodName] and the JWT.
  * Must return a [GrpcAuthResp] with a valid status. By default will use [requiredScopes] and [permissionsKey] to determine authorisation.
  * If using the default implementation [requiredScopes] must not be null, and it must contain a valid claim for every possible gRPC serviceName.
  */
 class AuthInterceptor(
     private val tokenAuthenticator: TokenAuthenticator,
-    requiredScopes: Map<String, String?>,
+    requiredScopes: Map<String, Set<String>>?,
     permissionsKey: String = "permissions",
     private val authorise: (String, DecodedJWT) -> GrpcAuthResp = { serviceName, token ->
-        requiredScopes!![serviceName]?.let { claim ->
-            authRespToGrpcAuthResp(JWTAuthoriser.authorise(token, claim, permissionsKey))
+        requiredScopes!![serviceName]?.let { claims ->
+            authRespToGrpcAuthResp(JWTAuthoriser.authorise(token, claims, permissionsKey))
         }
             ?: GrpcAuthResp(Status.UNAUTHENTICATED.withDescription("Server has not defined a permission scope for ${serviceName}. This is a bug, contact the developers."))
     }
@@ -71,7 +72,7 @@ class AuthInterceptor(
         } else {
             val r = tokenAuthenticator.authenticate(value.substring(BEARER_TYPE.length).trim { it <= ' ' })
             if (r.statusCode === StatusCode.OK)
-                authorise(serverCall.methodDescriptor.serviceName!!, r.token!!)
+                authorise(serverCall.methodDescriptor.fullMethodName!!, r.token!!)
             else
                 GrpcAuthResp(statusCodeToStatus(r.statusCode).withDescription(r.message).withCause(r.cause))
         }

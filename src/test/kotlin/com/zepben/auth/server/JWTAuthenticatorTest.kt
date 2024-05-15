@@ -16,10 +16,16 @@
 
 package com.zepben.auth.server
 
+import com.auth0.jwk.Jwk
+import com.auth0.jwk.JwkException
+import com.auth0.jwk.UrlJwkProvider
 import com.auth0.jwt.exceptions.*
 import com.zepben.auth.common.StatusCode
 import com.zepben.auth.server.JWTAuthoriser.authorise
 import com.zepben.testutils.auth.*
+import com.zepben.testutils.exception.ExpectException.expect
+import io.mockk.every
+import io.mockk.mockk
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.equalTo
 import org.hamcrest.Matchers.instanceOf
@@ -68,7 +74,20 @@ class JWTAuthenticatorTest {
         assertThat(authResp.cause, instanceOf(InvalidClaimException::class.java))
         assertThat(authResp.message, equalTo("The Claim 'iss' value doesn't match the required issuer."))
     }
+
+    @Test
+    fun `keys are updated when unknown key is provided`() {
+        val jwk = Jwk("fakekid", "RSA", "RS256", "", emptyList(), "", emptyList(), "", attribs)
+        val mockJWK = mockk<UrlJwkProvider> {
+            every { all } returns listOf(jwk)
+        }
+        val ta = JWTAuthenticator("https://fake-aud/", "https://issuer/", mockJWK)
+
+        assertThat(ta.getKeyFromJwk("fakekid"), equalTo(jwk))
+
+        expect {
+            ta.getKeyFromJwk("fakekey")
+        }.toThrow(JwkException::class.java)
+            .withMessage("Unable to find key fakekey in jwk endpoint. Check your JWK URL.")
+    }
 }
-
-
-

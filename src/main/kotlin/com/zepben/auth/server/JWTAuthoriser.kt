@@ -29,16 +29,24 @@ object JWTAuthoriser {
         return AuthResponse(StatusCode.UNAUTHENTICATED, "Token was missing required claim $requiredClaim")
     }
 
+    /**
+     * Authorise a JWT.
+     * This function will check that a JWT has all the [requiredClaims]. Claims will be extracted from the given [permissionsField].
+     *
+     * @param token The JWT
+     * @param requiredClaims The claims to authorise. If empty all tokens will be authorised.
+     * @param permissionsField The field to extract claims from. Defaults to "permissions".
+     */
     @JvmStatic
     fun authorise(token: DecodedJWT, requiredClaims: Set<String>, permissionsField: String = "permissions"): AuthResponse {
+        if (requiredClaims.isEmpty())
+            return AuthResponse(StatusCode.OK)
         val permissions = token.getClaim(permissionsField).asList(String::class.java).toHashSet()
         if (permissions.intersect(requiredClaims).size == requiredClaims.size)
             return AuthResponse(StatusCode.OK)
         return AuthResponse(
             StatusCode.UNAUTHENTICATED,
-            "Token was missing a required claim. Had [${permissions.joinToString(", ")}] but needed [${requiredClaims.joinToString(
-                ", "
-            )}]"
+            "Token was missing a required claim. Had [${permissions.joinToString(", ")}] but needed [${requiredClaims.joinToString(", ")}]"
         )
     }
 }

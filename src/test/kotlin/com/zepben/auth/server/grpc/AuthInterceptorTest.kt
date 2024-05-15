@@ -35,7 +35,7 @@ class AuthInterceptorTest {
     fun testIntercept() {
         val ta = JWTAuthenticator("https://fake-aud/", "https://issuer/", MockJwksUrlProvider())
         val requiredScopes = mapOf(
-            "zepben.protobuf.np.NetworkProducer" to write_network_scope
+            "zepben.protobuf.np.NetworkProducer" to setOf(write_network_scope)
         )
         val authInterceptor = AuthInterceptor(ta, requiredScopes)
         var sc = MockServerCall<Int, Int>({ status, _ ->
@@ -92,5 +92,25 @@ class AuthInterceptorTest {
         authInterceptor.interceptCall(sc, mdWithBearer, sch)
         assertThat("Call was not made to the authenticator.", callWasMade)
         assertThat("Call was not made to the authoriser.", authoriseCalled)
+    }
+
+    @Test
+    fun `test authorise with null required scope returns OK`() {
+        val mdWithBearer = Metadata().apply { put(AUTHORIZATION_METADATA_KEY, "Bearer $TOKEN") }
+        val ta = JWTAuthenticator("https://fake-aud/", "https://issuer/", MockJwksUrlProvider())
+        val requiredScopes = mapOf(
+            "zepben.protobuf.np.NetworkProducer" to null
+        )
+        val authInterceptor = AuthInterceptor(ta, null)
+        val sc = MockServerCall<Int, Int>({ _, _ -> })
+        var callWasMade = false
+        val sch = MockServerCallHandler<Int, Int> { _, metadata ->
+            // not really important assert - just to make sure no one balls'd up the test
+            assertThat("Metadata is missing bearer token.", metadata.containsKey(AUTHORIZATION_METADATA_KEY))
+            callWasMade = true
+        }
+        authInterceptor.interceptCall(sc, mdWithBearer, sch)
+        assertThat("Call was not made to the authenticator.", callWasMade)
+
     }
 }
