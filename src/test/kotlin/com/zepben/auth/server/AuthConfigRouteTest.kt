@@ -40,7 +40,7 @@ class AuthConfigRouteTest {
     fun testHandle() {
         val expectedResponse: String = JsonObject().apply {
             put("authType", AuthMethod.AUTH0)
-            put("issuer", "test-issuer")
+            put("issuerDomain", "test-issuer")
             put("audience", "test-audience")
             put("tokenPath", "test-token-path")
             put("algorithm", "RS256")

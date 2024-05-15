@@ -9,11 +9,9 @@
 ### Enhancements
 * None.
 
+## [0.9.1] - UNRELEASED
 ### Fixes
-* None.
-
-### Notes
-* None.
+* Revert AuthConfigRoute to use `issuerDomain` rather than `issuer`.
 
 ## [0.9.0] - 2024-05-14
 ### Breaking Changes
