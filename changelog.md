@@ -1,5 +1,5 @@
 # Evolve SDK connection library
-## [0.9.1] - UNRELEASED
+## [0.9.1] - 2024-05-15
 ### Fixes
 * Revert AuthConfigRoute to use `issuerDomain` rather than `issuer`.
 * Correctly refresh and store JWK keys on request
