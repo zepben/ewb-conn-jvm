@@ -35,7 +35,6 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.*
 import org.mockito.kotlin.mock
 import java.net.http.HttpClient
-import java.net.http.HttpRequest
 import java.net.http.HttpRequest.BodyPublishers
 import java.net.http.HttpResponse
 import javax.net.ssl.SSLContext
@@ -89,50 +88,30 @@ internal class ZepbenTokenFetcherTest {
     fun testCreateTokenFetcherSuccess() {
         doReturn(StatusCode.OK.code).`when`(response).statusCode()
         doReturn(
-            "{\"authType\": \"OAUTH\", \"audience\": \"test_audience\", \"issuerDomain\": \"test_issuer\", \"tokenPath\": \"/oauth/token\"}"
+            "{\"authType\": \"OAUTH\", \"audience\": \"test_audience\", \"issuer\": \"https://testissuer\", \"jwks_uri\": \"https://jwkuri\", \"token_endpoint\": \"https://tokenEndpoint\"}"
         ).`when`(response).body()
 
         val tokenFetcher = createTokenFetcher("https://testaddress", confClient = client, authClient = client)
-        verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
-        assertThat(tokenFetcher?.audience, equalTo("test_audience"))
-        assertThat(tokenFetcher?.issuerDomain, equalTo("test_issuer"))
-    }
-
-    @Test
-    fun testCreateTokenFetcherNoTokenPath() {
-        doReturn(StatusCode.OK.code).`when`(response).statusCode()
-        doReturn(
-            "{\"authType\": \"OAUTH\", \"audience\": \"test_audience\", \"issuerDomain\": \"test_issuer\"}"
-        ).`when`(response).body()
-
-        val tokenFetcher = createTokenFetcher("https://testaddress", confClient = client, authClient = client)
-        verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
-        assertThat(tokenFetcher?.audience, equalTo("test_audience"))
-        assertThat(tokenFetcher?.issuerDomain, equalTo("test_issuer"))
-    }
-
-    @Test
-    fun testCreateTokenFetcherLowercaseAuthType() {
-        doReturn(StatusCode.OK.code).`when`(response).statusCode()
-        doReturn(
-            "{\"authType\": \"oauth\", \"audience\": \"test_audience\", \"issuerDomain\": \"test_issuer\", \"tokenPath\": \"/oauth/token\"}"
-        ).`when`(response).body()
-
-        val tokenFetcher = createTokenFetcher("https://testaddress", confClient = client, authClient = client)
-        verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
-        assertThat(tokenFetcher?.authMethod, equalTo(AuthMethod.OAUTH))
+        assertThat(tokenFetcher.audience, equalTo("test_audience"))
+        assertThat(tokenFetcher.tokenEndpoint, equalTo("https://tokenEndpoint"))
     }
 
     @Test
     fun testCreateTokenFetcherNoAuth() {
         doReturn(StatusCode.OK.code).`when`(response).statusCode()
         doReturn(
-            "{\"authType\": \"NONE\", \"audience\": \"\", \"issuerDomain\": \"\"}"
+            "{\"authType\": \"NONE\", \"audience\": \"\", \"issuer\": \"https://tokenEndpoint\"}"
         ).`when`(response).body()
 
-        val tokenFetcher = createTokenFetcher("https://testaddress", confClient = client, authClient = client)
-        verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
-        assertThat(tokenFetcher, equalTo(null))
+        expect {
+            createTokenFetcher("https://testaddress", confClient = client, authClient = client)
+        }.toThrow(AuthException::class.java)
+            .withMessage("Detected Auth set to NONE, this is not supported for fetching tokens! Check your configuration matches https://testaddress")
+            .exception
+            .apply {
+                verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
+                assertThat(statusCode, equalTo(1))
+            }
     }
 
     @Test
@@ -187,7 +166,7 @@ internal class ZepbenTokenFetcherTest {
     fun testCreateTokenFetcherManagedIdentity() {
         val tokenFetcher = createTokenFetcherManagedIdentity("https://testaddress")
         assertThat(tokenFetcher, notNullValue())
-        assertThat(tokenFetcher.authMethod, equalTo(AuthMethod.ENTRAID))
+        assertThat(tokenFetcher.authMethod, equalTo(AuthMethod.OAUTH))
     }
 
     @Test
@@ -197,11 +176,9 @@ internal class ZepbenTokenFetcherTest {
 
         val tokenFetcher = ZepbenTokenFetcher(
             audience = "test_audience",
-            issuerDomain = "testissuer.com.au",
+            tokenEndpoint = "https://testissuer.com.au",
             authMethod = AuthMethod.OAUTH,
-            issuerProtocol = "https",
-            tokenPath = "/fake/path",
-            client = client
+            client = client,
         )
         verify(client, never()).send(any(), any<HttpResponse.BodyHandler<String>>())
         val token = tokenFetcher.fetchToken()
@@ -216,10 +193,8 @@ internal class ZepbenTokenFetcherTest {
 
         val tokenFetcher = ZepbenTokenFetcher(
             audience = "test_audience",
-            issuerDomain = "testissuer.com.au",
+            tokenEndpoint = "https://testissuer.com.au",
             authMethod = AuthMethod.OAUTH,
-            issuerProtocol = "https",
-            tokenPath = "/fake/path",
             client = client
         )
         verify(client, never()).send(any(), any<HttpResponse.BodyHandler<String>>())
@@ -241,10 +216,8 @@ internal class ZepbenTokenFetcherTest {
 
         val tokenFetcher = ZepbenTokenFetcher(
             audience = "test_audience",
-            issuerDomain = "testissuer.com.au",
+            tokenEndpoint = "https://testissuer.com.au",
             authMethod = AuthMethod.OAUTH,
-            issuerProtocol = "https",
-            tokenPath = "/fake/path",
             client = client
         )
         verify(client, never()).send(any(), any<HttpResponse.BodyHandler<String>>())
@@ -266,10 +239,8 @@ internal class ZepbenTokenFetcherTest {
 
         val tokenFetcher = ZepbenTokenFetcher(
             audience = "test_audience",
-            issuerDomain = "testissuer.com.au",
+            tokenEndpoint = "https://testissuer.com.au",
             authMethod = AuthMethod.OAUTH,
-            issuerProtocol = "https",
-            tokenPath = "/fake/path",
             client = client
         )
         verify(client, never()).send(any(), any<HttpResponse.BodyHandler<String>>())
@@ -291,10 +262,8 @@ internal class ZepbenTokenFetcherTest {
 
         val tokenFetcher = ZepbenTokenFetcher(
             audience = "test_audience",
-            issuerDomain = "testissuer.com.au",
+            tokenEndpoint = "https://testissuer.com.au",
             authMethod = AuthMethod.OAUTH,
-            issuerProtocol = "https",
-            tokenPath = "/fake/path",
             client = client
         )
         verify(client, never()).send(any(), any<HttpResponse.BodyHandler<String>>())
@@ -319,17 +288,15 @@ internal class ZepbenTokenFetcherTest {
         mockStatic(BodyPublishers::class.java, CALLS_REAL_METHODS).use { bodyPublishers ->
             val tokenFetcher = ZepbenTokenFetcher(
                 audience = "test_audience",
-                issuerDomain = "testissuer.com.au",
+                tokenEndpoint = "https://testissuer.com.au",
                 authMethod = AuthMethod.OAUTH,
-                issuerProtocol = "https",
-                tokenPath = "/fake/path",
                 client = client,
                 refreshToken = "test_refresh_token"
             )
             verify(client, never()).send(any(), any<HttpResponse.BodyHandler<String>>())
             val token = tokenFetcher.fetchToken()
             verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
-            bodyPublishers.verify { BodyPublishers.ofString(matches("\"refresh_token\"\\s*:\\s*\"test_refresh_token\"")) }
+            bodyPublishers.verify { BodyPublishers.ofString(matches("audience=test_audience&refresh_token=test_refresh_token")) }
             assertThat(token, equalTo("Bearer $TOKEN"))
         }
 
@@ -344,11 +311,11 @@ internal class ZepbenTokenFetcherTest {
         doReturn("{\"access_token\":\"$TOKEN\", \"token_type\":\"Bearer\"}").`when`(response).body()
 
         assertThat(
-            ZepbenTokenFetcher("audience", "issuerDomain", AuthMethod.OAUTH, verifyCertificate = true).fetchToken(),
+            ZepbenTokenFetcher(audience = "audience", tokenEndpoint = "https://testissuer", authMethod = AuthMethod.OAUTH, verifyCertificate = true).fetchToken(),
             equalTo("Bearer $TOKEN")
         )
         assertThat(
-            ZepbenTokenFetcher("audience", "issuerDomain", AuthMethod.OAUTH, verifyCertificate = false).fetchToken(),
+            ZepbenTokenFetcher("audience", "https://testissuer", AuthMethod.OAUTH, verifyCertificate = false).fetchToken(),
             equalTo("Bearer $TOKEN")
         )
     }
@@ -361,7 +328,7 @@ internal class ZepbenTokenFetcherTest {
         doReturn("{\"access_token\":\"$TOKEN\", \"token_type\":\"Bearer\"}").`when`(response).body()
 
         assertThat(
-            ZepbenTokenFetcher("audience", "issuerDomain", AuthMethod.OAUTH, caFilename = "authCAFilename").fetchToken(),
+            ZepbenTokenFetcher("audience", "https://tokenEndpoint", AuthMethod.OAUTH, caFilename = "authCAFilename").fetchToken(),
             equalTo("Bearer $TOKEN")
         )
     }
@@ -374,7 +341,7 @@ internal class ZepbenTokenFetcherTest {
         doReturn("{\"access_token\":\"$TOKEN\", \"token_type\":\"Bearer\"}").`when`(response).body()
 
         assertThat(
-            ZepbenTokenFetcher("audience", "issuerDomain", AuthMethod.OAUTH).fetchToken(),
+            ZepbenTokenFetcher("audience", "https://tokenEndpoint", AuthMethod.OAUTH).fetchToken(),
             equalTo("Bearer $TOKEN")
         )
     }
@@ -383,27 +350,32 @@ internal class ZepbenTokenFetcherTest {
     fun testCreateTokenFetcherWithVerifyCertificatesOption() {
         mockkStatic("com.zepben.auth.client.ZepbenTokenFetcherKt")
         every {
-            createTokenFetcher("confAddress", secureClient, secureClient, "authTypeField", "audienceField", "issuerDomainField")
+            createTokenFetcher("confAddress", secureClient, secureClient, "audienceField", "issuerField")
         } returns secureTokenFetcher
         every {
-            createTokenFetcher("confAddress", insecureClient, insecureClient, "authTypeField", "audienceField", "issuerDomainField")
+            createTokenFetcher("confAddress", insecureClient, insecureClient, "audienceField", "issuerField")
         } returns insecureTokenFetcher
 
-        assertThat(createTokenFetcher("confAddress", true, "authTypeField", "audienceField", "issuerDomainField"), equalTo(secureTokenFetcher))
-        assertThat(createTokenFetcher("confAddress", false, "authTypeField", "audienceField", "issuerDomainField"), equalTo(insecureTokenFetcher))
+        assertThat(createTokenFetcher("confAddress", true, "audienceField", "issuerField"), equalTo(secureTokenFetcher))
+        assertThat(createTokenFetcher("confAddress", false, "audienceField", "issuerField"), equalTo(insecureTokenFetcher))
     }
 
     @Test
     fun testCreateTokenFetcherWithCAFilenames() {
         mockkStatic("com.zepben.auth.client.ZepbenTokenFetcherKt")
         every {
-            createTokenFetcher("confAddress", secureConfClient, secureAuthClient, "authTypeField", "audienceField", "issuerDomainField", any(), any(), any())
+            createTokenFetcher("confAddress", secureConfClient, secureAuthClient, "audienceField", "issuerField")
         } returns secureTokenFetcher
 
         assertThat(
-            createTokenFetcher("confAddress", "confCAFilename", "authCAFilename", "authTypeField", "audienceField", "issuerDomainField", "", true) { _, _, _ ->
-                HttpRequest.newBuilder().build()
-            },
+            createTokenFetcher(
+                "confAddress",
+                confCAFilename = "confCAFilename",
+                authCAFilename = "authCAFilename",
+                audienceField = "audienceField",
+                issuerField = "issuerField",
+                verifyCertificates = true
+            ),
             equalTo(secureTokenFetcher)
         )
     }
@@ -412,27 +384,16 @@ internal class ZepbenTokenFetcherTest {
     fun testCreateTokenFetcherWithDefaultTls() {
         mockkStatic("com.zepben.auth.client.ZepbenTokenFetcherKt")
         every {
-            createTokenFetcher("confAddress", secureClient, secureClient, "authTypeField", "audienceField", "issuerDomainField", any(), any(), any())
+            createTokenFetcher("confAddress", secureClient, secureClient, "audienceField", "issuerField")
         } returns secureTokenFetcher
 
         assertThat(
-                createTokenFetcher ("confAddress", authTypeField = "authTypeField", audienceField = "audienceField", issuerDomainField = "issuerDomainField", tokenPathField = "", verifyCertificates = true, requestBuilder = { _, _, _ -> HttpRequest.newBuilder().build() }),
-        equalTo(secureTokenFetcher)
+            createTokenFetcher(
+                "confAddress",
+                audienceField = "audienceField",
+                issuerField = "issuerField",
+                verifyCertificates = true),
+            equalTo(secureTokenFetcher)
         )
     }
-
-    @Test
-    fun testNormalisationOfIssuerUrl() {
-        var tokenFetcher = ZepbenTokenFetcher("some_aud", "https://some_domain", AuthMethod.AUTH0)
-        assertThat(tokenFetcher.issuerURL, equalTo("https://some_domain/oauth/token"))
-        tokenFetcher = ZepbenTokenFetcher("some_aud", "https://some_domain/", AuthMethod.AUTH0)
-        assertThat(tokenFetcher.issuerURL, equalTo("https://some_domain/oauth/token"))
-        tokenFetcher = ZepbenTokenFetcher("some_aud", "some_domain/", AuthMethod.AUTH0)
-        assertThat(tokenFetcher.issuerURL, equalTo("https://some_domain/oauth/token"))
-        tokenFetcher = ZepbenTokenFetcher("some_aud", "some_domain/", AuthMethod.AUTH0, tokenPath = "some/path")
-        assertThat(tokenFetcher.issuerURL, equalTo("https://some_domain/some/path"))
-        tokenFetcher = ZepbenTokenFetcher("some_aud", "some_domain/", AuthMethod.AUTH0, issuerProtocol = "http")
-        assertThat(tokenFetcher.issuerURL, equalTo("http://some_domain/oauth/token"))
-    }
-
 }

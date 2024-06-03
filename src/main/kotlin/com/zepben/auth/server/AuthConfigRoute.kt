@@ -21,29 +21,24 @@ import io.vertx.ext.web.RoutingContext
 
 private data class AuthConfigResponse(
     val authType: AuthMethod,
-    val issuerDomain: String,
-    val audience: String,
-    val tokenPath: String,
-    val algorithm: String = "RS256"
+    val issuer: String,
+    val audience: String
 )
 
 fun routeFactory(
     availableRoute: AvailableRoute,
     audience: String,
-    domain: String,
-    tokenPath: String,
-    authType: AuthMethod = AuthMethod.AUTH0,
-    algorithm: String = "RS256"
+    issuer: String,
+    authType: AuthMethod = AuthMethod.OAUTH
 ): Route =
     when (availableRoute) {
         AvailableRoute.AUTH_CONFIG ->
             Route.builder()
                 .method(HttpMethod.GET)
                 .path("/auth")
-                .addHandler(AuthConfigRoute(audience, domain, tokenPath, authType))
+                .addHandler(AuthConfigRoute(audience, issuer, authType))
                 .build()
 
-        else -> throw IllegalArgumentException("Invalid Route")
     }
 
 enum class AvailableRoute(private val rv: RouteVersion) : VersionableRoute {
@@ -54,9 +49,10 @@ enum class AvailableRoute(private val rv: RouteVersion) : VersionableRoute {
     }
 }
 
-class AuthConfigRoute(audience: String, domain: String, tokenPath: String, authType: AuthMethod, algorithm: String = "RS256") : Handler<RoutingContext> {
+class AuthConfigRoute(audience: String, issuer: String, authType: AuthMethod) : Handler<RoutingContext> {
 
-    private val json: JsonObject = JsonObject.mapFrom(AuthConfigResponse(authType, domain, audience, tokenPath, algorithm))
+    private val json: JsonObject =
+        JsonObject.mapFrom(AuthConfigResponse(authType = authType, audience = audience, issuer = issuer))
 
     override fun handle(event: RoutingContext) {
         Respond.withJson(event, HttpResponseStatus.OK, json.encode())
