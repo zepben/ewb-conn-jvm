@@ -1,10 +1,14 @@
 # Evolve SDK connection library
 ## [0.10.0] - UNRELEASED
 ### Breaking Changes
-* None.
+* This is a breaking change as it changes the way the token fetcher works and has to be initialised. It means the clients using the `createTokenFetcher` helper functions or `ZepbenTokenFetcher`
+  class directly would need to be updated to use the new interface.
 
 ### New Features
-* None.
+* A new `AuthProviderConfig` object can now hold the auth config exposed by EWB
+* Simplified set of values exposed by EWB via `AuthConfigRoute`: issuer, audience, authMethod.
+* A new helper functions to create AuthProviderConfig by fetching the data from EWB, and to fetch provider-related configuration (jwkUri, tokenEndpoint)
+* `ZepbenTokenFetcher` is now using the new `AuthProviderConfig` object to fetch the auth config and the token.
 
 ### Enhancements
 * None.
@@ -19,9 +23,7 @@
 * None.
 
 ### New Features
-* A new `AuthProviderConfig` object can now hold the auth config exposed by EWB
-* A new helper functions to create AuthProviderConfig by fetching the data from EWB, and to fetch provider-related configuration (jwkUri, tokenEndpoint)
-* `ZepbenTokenFetcher` is now using the new `AuthProviderConfig` object to fetch the auth config and the token.
+* None.
 
 ### Enhancements
 * None.
