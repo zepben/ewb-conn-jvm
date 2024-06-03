@@ -20,8 +20,8 @@
 
 ### New Features
 * A new `AuthProviderConfig` object can now hold the auth config exposed by EWB
+* A new helper functions to create AuthProviderConfig by fetching the data from EWB, and to fetch provider-related configuration (jwkUri, tokenEndpoint)
 * `ZepbenTokenFetcher` is now using the new `AuthProviderConfig` object to fetch the auth config and the token.
-* `AuthConfigRoute` now exposes protocol for connecting to EWB and jwkUrl if defined.
 
 ### Enhancements
 * None.
