@@ -1,4 +1,20 @@
 # Evolve SDK connection library
+## [0.11.0] - UNRELEASED
+### Breaking Changes
+* None.
+
+### New Features
+* None.
+
+### Enhancements
+* None.
+
+### Fixes
+* None.
+
+### Notes
+* None.
+
 ## [0.10.0] - 2024-06-07
 ### Breaking Changes
 * This is a breaking change as it changes the way the token fetcher works and has to be initialised. It means the clients using the `createTokenFetcher` helper functions or `ZepbenTokenFetcher`
