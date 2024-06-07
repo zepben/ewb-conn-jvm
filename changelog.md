@@ -1,5 +1,5 @@
 # Evolve SDK connection library
-## [0.10.0] - UNRELEASED
+## [0.10.0] - 2024-06-07
 ### Breaking Changes
 * This is a breaking change as it changes the way the token fetcher works and has to be initialised. It means the clients using the `createTokenFetcher` helper functions or `ZepbenTokenFetcher`
   class directly would need to be updated to use the new interface.
@@ -13,7 +13,7 @@
 ### Enhancements
 * None.
 
-## [0.9.1] - UNRELEASED
+## [0.9.1] - 2024-06-07
 ### Fixes
 * Revert AuthConfigRoute to use `issuerDomain` rather than `issuer`.
 * Correctly refresh and store JWK keys on request
