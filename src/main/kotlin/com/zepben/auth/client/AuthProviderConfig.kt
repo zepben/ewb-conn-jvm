@@ -46,8 +46,8 @@ fun fetchProviderDetails(
     client: HttpClient = HttpClient.newBuilder().sslContext(SSLContextUtils.allTrustingSSLContext()).build(),
     handler: HttpResponse.BodyHandler<String> = HttpResponse.BodyHandlers.ofString()
 ): ProviderDetails {
-    val issuerURL = "$issuer/.well-known/openid-configuration"
-    val response = client.send(HttpRequest.newBuilder().uri(URI(issuerURL)).GET().build(), handler)
+    val issuerURL = "${issuer.trimEnd('/')}/.well-known/openid-configuration"
+    val response: HttpResponse<String> = client.send(HttpRequest.newBuilder().uri(URI(issuerURL)).GET().build(), handler)
     if (response.statusCode() == StatusCode.OK.code) {
         try {
             val authConfigJson = Json.decodeValue(response.body()) as JsonObject
