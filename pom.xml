@@ -10,7 +10,7 @@
 
     <groupId>com.zepben.evolve</groupId>
     <artifactId>evolve-conn</artifactId>
-    <version>0.10.0</version>
+    <version>0.10.1-SNAPSHOT1</version>
     <packaging>jar</packaging>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>A collection of utilities to create and manage connections between Zepben services and clients.</description>
