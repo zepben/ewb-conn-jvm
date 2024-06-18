@@ -10,7 +10,7 @@
 * None.
 
 ### Fixes
-* None.
+* Now correctly handles issuers trailing slashes.
 
 ### Notes
 * None.
