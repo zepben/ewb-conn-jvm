@@ -1,15 +1,19 @@
+/*
+ * Copyright 2024 Zeppelin Bend Pty Ltd
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
 package com.zepben.auth.client
 
 import com.zepben.auth.common.StatusCode
-import com.zepben.testutils.exception.ExpectException.Companion.expect
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import org.hamcrest.MatcherAssert.assertThat
-import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import java.net.URI
-import java.net.URISyntaxException
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
