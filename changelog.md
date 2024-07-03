@@ -4,7 +4,9 @@
 * Helper functions in ZepbenTokenFetcher now require specifying the AuthMethod.
 
 ### New Features
-* None.
+* `JWTAuthenticator` now supports authenticating tokens from multiple different issues via the use of `JWTMultiIssuerVerifierBuilder`.
+* `JWTMultiIssuerVerifierBuilder` will create a JWTVerifier based on the `iss` (issuer) of the token provided to `getVerifier()`. The returned JWTVerifier will
+  also validate that the audience claim matches the `requiredAudience` supplied to the `JWTMultiIssuerVerifierBuilder`.
 
 ### Enhancements
 * None.

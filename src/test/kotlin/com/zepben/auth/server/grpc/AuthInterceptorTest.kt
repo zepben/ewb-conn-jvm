@@ -16,7 +16,11 @@
 
 package com.zepben.auth.server.grpc
 
+import com.zepben.auth.client.ProviderDetails
+import com.zepben.auth.server.JWKHolder
 import com.zepben.auth.server.JWTAuthenticator
+import com.zepben.auth.server.JWTMultiIssuerVerifierBuilder
+import com.zepben.auth.server.TrustedIssuer
 import com.zepben.testutils.auth.MockJwksUrlProvider
 import com.zepben.testutils.auth.MockServerCall
 import com.zepben.testutils.auth.MockServerCallHandler
@@ -33,7 +37,11 @@ class AuthInterceptorTest {
 
     @Test
     fun testIntercept() {
-        val ta = JWTAuthenticator("https://fake-aud/", "https://issuer/", MockJwksUrlProvider())
+        val ta = JWTAuthenticator("https://fake-aud/", listOf(TrustedIssuer("https://issuer/", ProviderDetails("dunno", "https://whereileftmy/keys/"))),
+            verifierBuilder = JWTMultiIssuerVerifierBuilder(
+            "https://fake-aud/",
+            listOf(TrustedIssuer("https://issuer/", ProviderDetails("dunno", "https://whereileft.my/keys/"))),
+                JWKHolder { _ -> MockJwksUrlProvider().all.associateBy { it.id } } ))
         val requiredScopes = mapOf(
             "zepben.protobuf.np.NetworkProducer" to write_network_scope
         )
@@ -74,7 +82,11 @@ class AuthInterceptorTest {
 
     @Test
     fun `test provided authorise function is used`() {
-        val ta = JWTAuthenticator("https://fake-aud/", "https://issuer/", MockJwksUrlProvider())
+        val ta = JWTAuthenticator("https://fake-aud/", listOf(TrustedIssuer("https://issuer/", ProviderDetails("dunno", "https://whereileftmy/keys/"))),
+            verifierBuilder = JWTMultiIssuerVerifierBuilder(
+            "https://fake-aud/",
+            listOf(TrustedIssuer("https://issuer/", ProviderDetails("dunno", "https://whereileft.my/keys/"))),
+                JWKHolder { _ -> MockJwksUrlProvider().all.associateBy { it.id } } ))
         var authoriseCalled = false
         val mdWithBearer = Metadata().apply { put(AUTHORIZATION_METADATA_KEY, "Bearer $TOKEN") }
         val sc = MockServerCall<Int, Int>({ _, _ -> })
