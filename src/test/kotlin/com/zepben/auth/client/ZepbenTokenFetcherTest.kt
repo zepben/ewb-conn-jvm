@@ -289,7 +289,7 @@ internal class ZepbenTokenFetcherTest {
             val tokenFetcher = ZepbenTokenFetcher(
                 audience = "test_audience",
                 tokenEndpoint = "https://testissuer.com.au",
-                authMethod = AuthMethod.OAUTH,
+                authMethod = AuthMethod.AUTH0,
                 client = client,
                 refreshToken = "test_refresh_token"
             )
