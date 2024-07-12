@@ -10,14 +10,21 @@ package com.zepben.auth.server
 
 import com.auth0.jwk.Jwk
 import com.auth0.jwk.JwkException
+import com.auth0.jwk.JwkProvider
+import com.auth0.jwk.UrlJwkProvider
+import com.zepben.auth.client.ProviderDetails
 import com.zepben.testutils.exception.ExpectException
 import io.mockk.every
 import io.mockk.excludeRecords
 import io.mockk.mockk
 import io.mockk.verifySequence
 import org.hamcrest.MatcherAssert
+import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers
+import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
+import java.net.URI
+import java.net.URL
 
 class JWKHolderTest {
 
@@ -39,10 +46,11 @@ class JWKHolderTest {
         every { it(trustedIssuerTwo) } returns mapOf("common_key_id" to jwkCommonTwo)
     }
 
+    private val holderUnderTest = JWKHolder(jwkProvider)
+
     @Test
     fun `JWKHolder refreshes keys from issuer if kid not found in cache`() {
-        val underTest = JWKHolder(jwkProvider)
-        MatcherAssert.assertThat(underTest.getKeyFromJwk("keyId_33", trustedIssuerOne), Matchers.equalTo(jwk33))
+        MatcherAssert.assertThat(holderUnderTest.getKeyFromJwk("keyId_33", trustedIssuerOne), Matchers.equalTo(jwk33))
 
         validateKeyRequests(
             listOf(
@@ -53,9 +61,8 @@ class JWKHolderTest {
 
     @Test
     fun `JWKHolder takes key from cache if found`() {
-        val underTest = JWKHolder(jwkProvider)
-        MatcherAssert.assertThat(underTest.getKeyFromJwk("keyId_33", trustedIssuerOne), Matchers.equalTo(jwk33))
-        MatcherAssert.assertThat(underTest.getKeyFromJwk("keyId_33", trustedIssuerOne), Matchers.equalTo(jwk33))
+        MatcherAssert.assertThat(holderUnderTest.getKeyFromJwk("keyId_33", trustedIssuerOne), Matchers.equalTo(jwk33))
+        MatcherAssert.assertThat(holderUnderTest.getKeyFromJwk("keyId_33", trustedIssuerOne), Matchers.equalTo(jwk33))
 
         validateKeyRequests(
             listOf(
@@ -67,11 +74,10 @@ class JWKHolderTest {
 
     @Test
     fun `JWKHolder handles kid collision`() {
-        val underTest = JWKHolder(jwkProvider)
 
-        MatcherAssert.assertThat(underTest.getKeyFromJwk("common_key_id", trustedIssuerOne), Matchers.equalTo(jwkCommonOne))
-        MatcherAssert.assertThat(underTest.getKeyFromJwk("common_key_id", trustedIssuerTwo), Matchers.equalTo(jwkCommonTwo))
-        MatcherAssert.assertThat(underTest.getKeyFromJwk("common_key_id", trustedIssuerOne), Matchers.equalTo(jwkCommonOne))
+        MatcherAssert.assertThat(holderUnderTest.getKeyFromJwk("common_key_id", trustedIssuerOne), Matchers.equalTo(jwkCommonOne))
+        MatcherAssert.assertThat(holderUnderTest.getKeyFromJwk("common_key_id", trustedIssuerTwo), Matchers.equalTo(jwkCommonTwo))
+        MatcherAssert.assertThat(holderUnderTest.getKeyFromJwk("common_key_id", trustedIssuerOne), Matchers.equalTo(jwkCommonOne))
 
         validateKeyRequests(
             listOf(
@@ -86,19 +92,16 @@ class JWKHolderTest {
     fun `JWKHolder handles no keys returned`() {
         every { jwkProvider(trustedIssuerOne) } returns emptyMap()
 
-        val underTest = JWKHolder(jwkProvider)
-
         ExpectException.expect {
-            underTest.getKeyFromJwk("keyId_34", trustedIssuerOne)
+            holderUnderTest.getKeyFromJwk("keyId_34", trustedIssuerOne)
         }.toThrow<JwkException>().withMessage("Unable to find key keyId_34 in jwk endpoint. Check your JWK URL.")
         validateKeyRequest(trustedIssuerOne, jwkProvider, true)
     }
 
     @Test
     fun `JWKHolder throws on unable to find after refreshing cache`() {
-        val underTest = JWKHolder(jwkProvider)
         ExpectException.expect {
-            underTest.getKeyFromJwk("keyId_34", trustedIssuerOne)
+            holderUnderTest.getKeyFromJwk("keyId_34", trustedIssuerOne)
         }.toThrow<JwkException>().withMessage("Unable to find key keyId_34 in jwk endpoint. Check your JWK URL.")
 
         validateKeyRequest(trustedIssuerOne, jwkProvider, true)
@@ -132,4 +135,53 @@ class JWKHolderTest {
     private fun validateKeyRequest(trustedIssuer: TrustedIssuer, jwkProvider: (TrustedIssuer) -> Map<String, Jwk>, expectCacheRefresh: Boolean) {
         validateKeyRequests(listOf(KeyRequestCheck(trustedIssuer, jwkProvider, expectCacheRefresh)))
     }
+
+    @Test
+    fun trustedIssuerUrlJwkProviderTest() {
+        val keysUrlRaw = "https://keys/"
+
+        val providerDetails = mockk<ProviderDetails> {
+            every { this@mockk.jwkUrl } returns keysUrlRaw
+        }
+        val issuer = mockk<TrustedIssuer> {
+            every { this@mockk.providerDetails } returns providerDetails
+        }
+
+        val key1 = mockk<Jwk> { every { id } returns "1" }
+        val key2 = mockk<Jwk> { every { id } returns "2" }
+        val key3 = mockk<Jwk> { every { id } returns "3" }
+        val key4 = mockk<Jwk> { every { id } returns "4" }
+        val key5 = mockk<Jwk> { every { id } returns "5" }
+        val key6 = mockk<Jwk> { every { id } returns "6" }
+
+        val expectedResult = mapOf(
+            "1" to key1,
+            "2" to key2,
+            "3" to key3,
+            "4" to key4,
+            "5" to key5,
+            "6" to key6,
+        )
+
+        val returnedKeys = listOf(key1, key2, key3, key4, key5, key6)
+        val mockJwkProvider = mockk<UrlJwkProvider> {
+            every { all } returns returnedKeys
+        }
+
+        val keysUrl = URI(keysUrlRaw).toURL()
+
+        val mockUrlJwkProviderProvider = mockk<(URL) -> UrlJwkProvider> {
+            every { this@mockk(keysUrl) } returns mockJwkProvider
+        }
+
+        assertThat(trustedIssuerUrlJwkProvider(issuer, urlJwkProviderProvider = mockUrlJwkProviderProvider), equalTo(expectedResult))
+
+        verifySequence {
+            issuer.providerDetails
+            providerDetails.jwkUrl
+            mockUrlJwkProviderProvider.invoke(keysUrl)
+            mockJwkProvider.all
+        }
+    }
 }
+

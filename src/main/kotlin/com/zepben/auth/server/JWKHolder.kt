@@ -12,9 +12,15 @@ import com.auth0.jwk.Jwk
 import com.auth0.jwk.JwkException
 import com.auth0.jwk.UrlJwkProvider
 import java.net.URI
+import java.net.URL
+
+fun trustedIssuerUrlJwkProvider(
+    issuer: TrustedIssuer,
+    urlJwkProviderProvider: (URL) -> UrlJwkProvider = { url -> UrlJwkProvider(url) }
+) = urlJwkProviderProvider(URI(issuer.providerDetails.jwkUrl).toURL()).all.associateBy { it.id }
 
 class JWKHolder(
-    private val jwkProvider: (TrustedIssuer) -> Map<String, Jwk> = { issuer -> UrlJwkProvider(URI(issuer.providerDetails.jwkUrl).toURL()).all.associateBy { it.id } }
+    private val jwkProvider: (TrustedIssuer) -> Map<String, Jwk> = { issuer -> trustedIssuerUrlJwkProvider(issuer) }
 ) {
     private var keys: MutableMap<String, Map<String, Jwk>> = mutableMapOf()
 
