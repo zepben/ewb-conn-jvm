@@ -170,20 +170,13 @@ internal class ZepbenTokenFetcherTest {
     }
 
     @Test
-    fun testFetchTokenSuccessful() {
-        doReturn(StatusCode.OK.code).`when`(response).statusCode()
-        doReturn("{\"access_token\":\"$TOKEN\", \"token_type\":\"Bearer\"}").`when`(response).body()
+    fun testFetchAuth0TokenSuccessfulUsingCredentials() {
+        validateFetchTokenSuccessfulUsingCredentials(AuthMethod.AUTH0, "audience=test_audience")
+    }
 
-        val tokenFetcher = ZepbenTokenFetcher(
-            audience = "test_audience",
-            tokenEndpoint = "https://testissuer.com.au",
-            authMethod = AuthMethod.OAUTH,
-            client = client,
-        )
-        verify(client, never()).send(any(), any<HttpResponse.BodyHandler<String>>())
-        val token = tokenFetcher.fetchToken()
-        verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
-        assertThat(token, equalTo("Bearer $TOKEN"))
+    @Test
+    fun testFetchEntraTokenSuccessfulUsingCredentials() {
+        validateFetchTokenSuccessfulUsingCredentials(AuthMethod.ENTRAID, "scope=test_audience/.default")
     }
 
     @Test
@@ -280,48 +273,12 @@ internal class ZepbenTokenFetcherTest {
 
     @Test
     fun testFetchAuth0TokenSuccessfulUsingRefresh() {
-        doReturn(StatusCode.OK.code).`when`(response).statusCode()
-        doReturn(
-            "{\"access_token\":\"$TOKEN\", \"refresh_token\": \"test_refresh_token\", \"token_type\":\"Bearer\"}"
-        ).`when`(response).body()
-
-        mockStatic(BodyPublishers::class.java, CALLS_REAL_METHODS).use { bodyPublishers ->
-            val tokenFetcher = ZepbenTokenFetcher(
-                audience = "test_audience",
-                tokenEndpoint = "https://testissuer.com.au",
-                authMethod = AuthMethod.AUTH0,
-                client = client,
-                refreshToken = "test_refresh_token"
-            )
-            verify(client, never()).send(any(), any<HttpResponse.BodyHandler<String>>())
-            val token = tokenFetcher.fetchToken()
-            verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
-            bodyPublishers.verify { BodyPublishers.ofString(matches("audience=test_audience&refresh_token=test_refresh_token")) }
-            assertThat(token, equalTo("Bearer $TOKEN"))
-        }
+        fetchTokenSuccessfulUsingRefresh(AuthMethod.AUTH0, "audience=test_audience")
     }
 
     @Test
     fun testFetchEntraTokenSuccessfulUsingRefresh() {
-        doReturn(StatusCode.OK.code).`when`(response).statusCode()
-        doReturn(
-            "{\"access_token\":\"$TOKEN\", \"refresh_token\": \"test_refresh_token\", \"token_type\":\"Bearer\"}"
-        ).`when`(response).body()
-
-        mockStatic(BodyPublishers::class.java, CALLS_REAL_METHODS).use { bodyPublishers ->
-            val tokenFetcher = ZepbenTokenFetcher(
-                audience = "test_audience",
-                tokenEndpoint = "https://testissuer.com.au",
-                authMethod = AuthMethod.ENTRAID,
-                client = client,
-                refreshToken = "test_refresh_token"
-            )
-            verify(client, never()).send(any(), any<HttpResponse.BodyHandler<String>>())
-            val token = tokenFetcher.fetchToken()
-            verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
-            bodyPublishers.verify { BodyPublishers.ofString(matches("scope=test_audience/.default&refresh_token=test_refresh_token")) }
-            assertThat(token, equalTo("Bearer $TOKEN"))
-        }
+        fetchTokenSuccessfulUsingRefresh(AuthMethod.ENTRAID, "scope=test_audience/.default")
     }
 
     @Test
@@ -417,5 +374,35 @@ internal class ZepbenTokenFetcherTest {
                 verifyCertificates = true),
             equalTo(secureTokenFetcher)
         )
+    }
+
+    private fun validateFetchTokenSuccessfulUsingCredentials(authMethod: AuthMethod, expectedAudienceArgument: String) {
+        validateFetchTokenSuccessful(authMethod, expectedAudienceArgument, refreshToken = null)
+    }
+
+    private fun fetchTokenSuccessfulUsingRefresh(authMethod: AuthMethod, expectedAudienceArgument: String) {
+        validateFetchTokenSuccessful(authMethod, expectedAudienceArgument, "test_refresh_token")
+    }
+
+    private fun validateFetchTokenSuccessful(authMethod: AuthMethod, expectedAudienceArgument: String, refreshToken: String?) {
+        doReturn(StatusCode.OK.code).`when`(response).statusCode()
+        doReturn(
+            "{\"access_token\":\"$TOKEN\", ${refreshToken?.let { "\"refresh_token\": \"$it\"," } ?: ""} \"token_type\":\"Bearer\"}"
+        ).`when`(response).body()
+
+        mockStatic(BodyPublishers::class.java, CALLS_REAL_METHODS).use { bodyPublishers ->
+            val tokenFetcher = ZepbenTokenFetcher(
+                audience = "test_audience",
+                tokenEndpoint = "https://testissuer.com.au",
+                authMethod = authMethod,
+                client = client,
+                refreshToken = refreshToken
+            )
+            verify(client, never()).send(any(), any<HttpResponse.BodyHandler<String>>())
+            val token = tokenFetcher.fetchToken()
+            verify(client).send(any(), any<HttpResponse.BodyHandler<String>>())
+            bodyPublishers.verify { BodyPublishers.ofString(matches("$expectedAudienceArgument${refreshToken?.let {"&refresh_token=$it" } ?: ""}")) }
+            assertThat(token, equalTo("Bearer $TOKEN"))
+        }
     }
 }
