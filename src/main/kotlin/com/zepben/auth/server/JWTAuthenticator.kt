@@ -46,8 +46,8 @@ interface TokenAuthenticator {
  * A TokenAuthenticator that authenticates JWTs using a retrievable JWK
  *
  * @property audience The audience required for the token to be authenticated.
- * @property trustedIssuers List of domains to retrieve JWK's from.
- * @property verifierBuilder A [JWTMultiIssuerVerifierBuilder] used for constructing a [JWTVerifier] to authenticating JWTs.
+ * @property trustedIssuers List of domains hosting JWKS's.
+ * @property verifierBuilder A [JWTMultiIssuerVerifierBuilder] used for constructing a [JWTVerifier] for authenticating JWTs.
  */
 open class JWTAuthenticator(
     audience: String,

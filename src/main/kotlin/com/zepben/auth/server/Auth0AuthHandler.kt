@@ -27,9 +27,7 @@ class Auth0AuthHandler(
     private val authProvider: JWTAuthProvider,
     requiredClaims: Set<String>,
     private val skip: String? = null,
-    private val permissionsField: String
-) :
-    AuthenticationHandler {
+) : AuthenticationHandler {
 
     private val authorities = mutableSetOf<String>()
 
@@ -54,7 +52,7 @@ class Auth0AuthHandler(
         }
         for (authority in authorities) {
             val token = user.attributes().getValue("token") as DecodedJWT
-            val resp = JWTAuthoriser.authorise(token, authority, permissionsField)
+            val resp = JWTAuthoriser.authorise(token, authority)
             if (resp.statusCode !== StatusCode.OK) {
                 handler.handle(Future.failedFuture(HttpException(403, "Could not authorise all requested permissions. This is likely a bug.")))
                 return

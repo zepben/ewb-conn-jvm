@@ -38,7 +38,6 @@ class AuthRoute {
             path: String,
             audience: String,
             trustedIssuers: List<TrustedIssuer>,
-            permissionsField: String,
             requiredClaims: Iterable<String> = emptySet(),
             isRegexPath: Boolean = false,
         ): (AvailableRoute) -> Route =
@@ -53,7 +52,6 @@ class AuthRoute {
                                 Auth0AuthHandler(
                                     JWTAuthProvider(JWTAuthenticator(audience, trustedIssuers)),
                                     mutableSetOf<String>().apply { addAll(requiredClaims) },
-                                    permissionsField = permissionsField
                                 )
                             )
                             .build()
