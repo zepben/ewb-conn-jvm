@@ -122,13 +122,13 @@ class JWTMultiIssuerVerifierBuilderTest {
             every { keyId } returns "keyId_27"
         }
 
-        val publicKey = mockk<RSAPublicKey>() // I mean it does return that type but...
+        val publicKey = mockk<RSAPublicKey>()
 
         val jwk = mockk<Jwk>().also {
             every { it.publicKey } returns publicKey
         }
 
-        every { jwkHolder.getKeyFromJwk("keyId_27", trustedIssuerTwo ) } returns jwk
+        every { jwkHolder.getKeyFromJwk("keyId_27", trustedIssuerTwo) } returns jwk
 
         val alg = mockk<Algorithm>()
 

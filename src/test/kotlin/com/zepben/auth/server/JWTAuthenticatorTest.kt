@@ -91,7 +91,6 @@ class JWTAuthenticatorTest {
         assertThat(authResp.message, equalTo("Unknown or untrusted issuer: https://issuer/"))
     }
 
-
     @Test
     fun `keys are updated when unknown key is provided`() {
         val jwk = Jwk("fakekid", "RSA", "RS256", "", emptyList(), "", emptyList(), "", attribs)

@@ -52,7 +52,7 @@ data class GrpcAuthResp(val status: Status, val token: DecodedJWT? = null)
  * @param requiredScopes A map of gRPC descriptors to their corresponding required scopes. If an empty set of scopes is provided, no authorisation
  * is necessary for the provided descriptor.
  * @property authorise Callback to authorise a taken. Will be provided with the gRPC service name as per [serverCall.methodDescriptor.serviceName] and the JWT.
- * Must return a [GrpcAuthResp] with a valid status. By default will use [requiredScopes] and [permissionsKey] to determine authorisation.
+ * Must return a [GrpcAuthResp] with a valid status. By default will use [requiredScopes] and "permissions" (Auth0) or "roles" (EntraID) to determine authorisation.
  * If using the default implementation [requiredScopes] must not be null, and it must contain a valid claim for every possible gRPC serviceName.
  */
 class AuthInterceptor(

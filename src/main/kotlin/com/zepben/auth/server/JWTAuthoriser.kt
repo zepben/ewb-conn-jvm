@@ -24,7 +24,7 @@ object JWTAuthoriser {
 
     /**
      * Authorise a JWT.
-     * This function will check that a JWT has the required claims. The claims will be to extracted from "permissions" (Auth0) or "roles" (EntraID), if "permissions" field is missing.
+     * This function will check that a JWT has the required claims. The claims will be extracted from "permissions" (Auth0) or "roles" (EntraID), if "permissions" field is missing.
      *
      * @param token The JWT
      * @param requiredClaim The claim to authorise.
@@ -41,7 +41,7 @@ object JWTAuthoriser {
 
     /**
      * Authorise a JWT.
-     * This function will check that a JWT has all the [requiredClaims]. The claims will be to extracted from "permissions" (Auth0) or "roles" (EntraID), if "permissions" field is missing.
+     * This function will check that a JWT has all the [requiredClaims]. The claims will be extracted from "permissions" (Auth0) or "roles" (EntraID), if "permissions" field is missing.
      *
      * @param token The JWT
      * @param requiredClaims The claims to authorise. If empty all tokens will be authorised.

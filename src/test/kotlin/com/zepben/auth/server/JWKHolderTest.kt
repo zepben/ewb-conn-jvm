@@ -10,7 +10,6 @@ package com.zepben.auth.server
 
 import com.auth0.jwk.Jwk
 import com.auth0.jwk.JwkException
-import com.auth0.jwk.JwkProvider
 import com.auth0.jwk.UrlJwkProvider
 import com.zepben.auth.client.ProviderDetails
 import com.zepben.testutils.exception.ExpectException
@@ -18,9 +17,7 @@ import io.mockk.every
 import io.mockk.excludeRecords
 import io.mockk.mockk
 import io.mockk.verifySequence
-import org.hamcrest.MatcherAssert
 import org.hamcrest.MatcherAssert.assertThat
-import org.hamcrest.Matchers
 import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
 import java.net.URI
@@ -50,7 +47,7 @@ class JWKHolderTest {
 
     @Test
     fun `JWKHolder refreshes keys from issuer if kid not found in cache`() {
-        MatcherAssert.assertThat(holderUnderTest.getKeyFromJwk("keyId_33", trustedIssuerOne), Matchers.equalTo(jwk33))
+        assertThat(holderUnderTest.getKeyFromJwk("keyId_33", trustedIssuerOne), equalTo(jwk33))
 
         validateKeyRequests(
             listOf(
@@ -61,8 +58,8 @@ class JWKHolderTest {
 
     @Test
     fun `JWKHolder takes key from cache if found`() {
-        MatcherAssert.assertThat(holderUnderTest.getKeyFromJwk("keyId_33", trustedIssuerOne), Matchers.equalTo(jwk33))
-        MatcherAssert.assertThat(holderUnderTest.getKeyFromJwk("keyId_33", trustedIssuerOne), Matchers.equalTo(jwk33))
+        assertThat(holderUnderTest.getKeyFromJwk("keyId_33", trustedIssuerOne), equalTo(jwk33))
+        assertThat(holderUnderTest.getKeyFromJwk("keyId_33", trustedIssuerOne), equalTo(jwk33))
 
         validateKeyRequests(
             listOf(
@@ -75,9 +72,9 @@ class JWKHolderTest {
     @Test
     fun `JWKHolder handles kid collision`() {
 
-        MatcherAssert.assertThat(holderUnderTest.getKeyFromJwk("common_key_id", trustedIssuerOne), Matchers.equalTo(jwkCommonOne))
-        MatcherAssert.assertThat(holderUnderTest.getKeyFromJwk("common_key_id", trustedIssuerTwo), Matchers.equalTo(jwkCommonTwo))
-        MatcherAssert.assertThat(holderUnderTest.getKeyFromJwk("common_key_id", trustedIssuerOne), Matchers.equalTo(jwkCommonOne))
+        assertThat(holderUnderTest.getKeyFromJwk("common_key_id", trustedIssuerOne), equalTo(jwkCommonOne))
+        assertThat(holderUnderTest.getKeyFromJwk("common_key_id", trustedIssuerTwo), equalTo(jwkCommonTwo))
+        assertThat(holderUnderTest.getKeyFromJwk("common_key_id", trustedIssuerOne), equalTo(jwkCommonOne))
 
         validateKeyRequests(
             listOf(

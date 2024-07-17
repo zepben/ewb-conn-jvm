@@ -16,7 +16,6 @@
 
 package com.zepben.auth.server
 
-import com.auth0.jwk.UrlJwkProvider
 import com.auth0.jwt.JWT
 import com.auth0.jwt.exceptions.*
 import com.auth0.jwt.interfaces.DecodedJWT
@@ -24,8 +23,6 @@ import com.zepben.auth.common.AuthException
 import com.zepben.auth.common.StatusCode
 import io.vertx.ext.web.handler.HttpException
 
-const val WELL_KNOWN_JWKS_PATH = "/.well-known/jwks.json"
-const val AUTHORIZATION_HEADER = "Authorization"
 const val CONTENT_TYPE = "Content-Type"
 
 data class AuthResponse(
