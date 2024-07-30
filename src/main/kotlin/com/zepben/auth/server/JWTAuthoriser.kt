@@ -31,12 +31,7 @@ object JWTAuthoriser {
      */
     @JvmStatic
     fun authorise(token: DecodedJWT, requiredClaim: String): AuthResponse {
-        val permissions = run {
-            token.getClaim("permissions").asList(String::class.java) ?: token.getClaim("roles").asList(String::class.java) ?: emptyList()
-        }.toHashSet()
-        if (requiredClaim in permissions)
-            return AuthResponse(StatusCode.OK)
-        return AuthResponse(StatusCode.UNAUTHENTICATED, "Token was missing required claim $requiredClaim")
+        return authorise(token, setOf(requiredClaim))
     }
 
     /**
