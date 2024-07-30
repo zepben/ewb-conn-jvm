@@ -1,7 +1,7 @@
 # Evolve SDK connection library
 ## [0.11.0] - UNRELEASED
 ### Breaking Changes
-* None.
+* Helper functions in ZepbenTokenFetcher now require specifying the AuthMethod.
 
 ### New Features
 * None.
@@ -11,6 +11,7 @@
 
 ### Fixes
 * Now correctly handles issuers trailing slashes.
+* Now correctly sending scope or audience to provider.
 
 ### Notes
 * None.

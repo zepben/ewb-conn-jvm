@@ -28,7 +28,7 @@ data class ProviderDetails(
 data class AuthProviderConfig(
     val issuer: String,
     val audience: String,
-    val authType: AuthMethod = AuthMethod.OAUTH,
+    val authMethod: AuthMethod = AuthMethod.OAUTH,
     val providerDetails: ProviderDetails = ProviderDetails("", "")
 )
 
@@ -118,7 +118,7 @@ fun createProviderConfig(
                 }
 
                 AuthProviderConfig(
-                    authType = authMethod,
+                    authMethod = authMethod,
                     issuer = issuer,
                     audience = authConfigJson.getString(audienceField, ""),
                     providerDetails = fetchProviderDetails(issuer, client, handler)

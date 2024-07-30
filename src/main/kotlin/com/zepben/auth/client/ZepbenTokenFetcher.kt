@@ -118,8 +118,17 @@ class ZepbenTokenFetcher(
     )
 
     init {
-        tokenRequestData.put("audience", audience)
-        refreshRequestData.put("audience", audience)
+        when (authMethod) {
+            AuthMethod.AUTH0 -> {
+                tokenRequestData.put("audience", audience)
+                refreshRequestData.put("audience", audience)
+            }
+            AuthMethod.ENTRAID -> {
+                tokenRequestData.put("scope", "${audience}/.default")
+                refreshRequestData.put("scope", "${audience}/.default")
+            }
+            else -> {}
+        }
     }
 
     /**
@@ -217,6 +226,7 @@ class ZepbenTokenFetcher(
  * @returns: A `ZepbenTokenFetcher` if the server reported authentication was configured, otherwise None.
  */
 fun createTokenFetcher(
+    authMethod: AuthMethod,
     issuer: String,
     audience: String,
     authClient: HttpClient? = null,
@@ -227,19 +237,18 @@ fun createTokenFetcher(
         authClient ?: if (verifyCertificates) HttpClient.newHttpClient() else HttpClient.newBuilder().sslContext(SSLContextUtils.allTrustingSSLContext())
             .build()
     val config = AuthProviderConfig(
+        authMethod = authMethod,
         issuer = issuer,
         audience = audience,
         providerDetails = fetchProviderDetails(issuer = issuer, client = client)
     )
 
     return ZepbenTokenFetcher(
+        authMethod = config.authMethod,
         audience = config.audience,
         tokenEndpoint = config.providerDetails.tokenEndpoint,
         client = client,
-    ).also {
-        it.tokenRequestData.put("scope", "${it.audience}/.default")
-        it.refreshRequestData.put("scope", "${it.audience}/.default")
-    }
+    )
 }
 
 /**
@@ -268,13 +277,11 @@ fun createTokenFetcher(
     )
 
     return ZepbenTokenFetcher(
+        authMethod = config.authMethod,
         audience = config.audience,
         tokenEndpoint = config.providerDetails.tokenEndpoint,
         client = authClient,
-    ).also {
-        it.tokenRequestData.put("scope", "${it.audience}/.default")
-        it.refreshRequestData.put("scope", "${it.audience}/.default")
-    }
+    )
 }
 
 /**
