@@ -29,7 +29,7 @@ class AuthRoute {
          * @param availableRoute The [AvailableRoute] for API version management.
          * @param path The path the [Route] should be built on
          * @param audience The audience required for JWT authentication
-         * @param issuer The issuer domain required for JWT authentication
+         * @param trustedIssuers The list of issuers trusted by the JWT authentication.
          * @param requiredClaims The claims required for the JWT for authorisation.
          */
         @JvmOverloads
@@ -37,9 +37,7 @@ class AuthRoute {
         fun routeFactory(
             path: String,
             audience: String,
-            jwkProvider: UrlJwkProvider,
-            issuer: String,
-            permissionsField: String,
+            trustedIssuers: List<TrustedIssuer>,
             requiredClaims: Iterable<String> = emptySet(),
             isRegexPath: Boolean = false,
         ): (AvailableRoute) -> Route =
@@ -52,9 +50,8 @@ class AuthRoute {
                             .hasRegexPath(isRegexPath)
                             .addHandler(
                                 Auth0AuthHandler(
-                                    JWTAuthProvider(JWTAuthenticator(audience, issuer, jwkProvider)),
+                                    JWTAuthProvider(JWTAuthenticator(audience, trustedIssuers)),
                                     mutableSetOf<String>().apply { addAll(requiredClaims) },
-                                    permissionsField = permissionsField
                                 )
                             )
                             .build()

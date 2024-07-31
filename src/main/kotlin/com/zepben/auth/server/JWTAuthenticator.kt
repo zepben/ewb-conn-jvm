@@ -16,20 +16,13 @@
 
 package com.zepben.auth.server
 
-import com.auth0.jwk.Jwk
-import com.auth0.jwk.JwkException
-import com.auth0.jwk.UrlJwkProvider
 import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.exceptions.*
 import com.auth0.jwt.interfaces.DecodedJWT
 import com.zepben.auth.common.AuthException
 import com.zepben.auth.common.StatusCode
 import io.vertx.ext.web.handler.HttpException
-import java.security.interfaces.RSAPublicKey
 
-const val WELL_KNOWN_JWKS_PATH = "/.well-known/jwks.json"
-const val AUTHORIZATION_HEADER = "Authorization"
 const val CONTENT_TYPE = "Content-Type"
 
 data class AuthResponse(
@@ -50,25 +43,14 @@ interface TokenAuthenticator {
  * A TokenAuthenticator that authenticates JWTs using a retrievable JWK
  *
  * @property audience The audience required for the token to be authenticated.
- * @property issuerDomain The domain hosting the JWKS.
- * @property jwkProvider An [UrlJwkProvider] for fetching the JWK used for authenticating JWTs.
- * @property issuer The Issuer required for the token to be authenticated. Typically is the same as [issuerDomain]. Will
- *                  default to https://<[jwksDomain]>/.
+ * @property trustedIssuers List of domains hosting JWKS's.
+ * @property verifierBuilder A [JWTMultiIssuerVerifierBuilder] used for constructing a [JWTVerifier] for authenticating JWTs.
  */
 open class JWTAuthenticator(
-    private val audience: String,
-    private val issuer: String,
-    private val jwkProvider: UrlJwkProvider
-): TokenAuthenticator {
-    private var keys: Map<String, Jwk> = refreshJwk()
-
-    private fun refreshJwk() = jwkProvider.all.associateBy { it.id }
-
-    internal fun getKeyFromJwk(kid: String): Jwk =
-        keys[kid] ?: run {
-            keys = refreshJwk()
-            keys[kid] ?: throw JwkException("Unable to find key $kid in jwk endpoint. Check your JWK URL.")
-        }
+    audience: String,
+    trustedIssuers: List<TrustedIssuer>,
+    private val verifierBuilder: JWTMultiIssuerVerifierBuilder = JWTMultiIssuerVerifierBuilder(requiredAudience = audience, trustedIssuers = trustedIssuers)
+) : TokenAuthenticator {
 
     override fun authenticate(token: String?): AuthResponse =
         if (token.isNullOrEmpty()) {
@@ -76,17 +58,7 @@ open class JWTAuthenticator(
         } else {
             try {
                 val decoded = JWT.decode(token)
-                // Get the key ID for the key that was used to sign this key, and look it up against our stored keys.
-                val rsaKey = getKeyFromJwk(decoded.getHeaderClaim("kid").asString())
-                val rsaAlg = Algorithm.RSA256(rsaKey.publicKey as RSAPublicKey?, null)
-
-                // verify token signature
-                val verifier = JWT
-                    .require(rsaAlg)
-                    .withAudience(audience)
-                    .withIssuer(issuer)
-                    .acceptLeeway(60 * 1000) // Extend valid window by 60 seconds in both directions
-                    .build()
+                val verifier = verifierBuilder.getVerifier(decoded)
                 verifier.verify(decoded)
 
                 AuthResponse(StatusCode.OK, token = decoded)

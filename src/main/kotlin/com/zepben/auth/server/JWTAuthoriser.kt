@@ -24,33 +24,30 @@ object JWTAuthoriser {
 
     /**
      * Authorise a JWT.
-     * This function will check that a JWT has the required claims. Claims will be extracted from the given [permissionsField].
+     * This function will check that a JWT has the required claims. The claims will be extracted from "permissions" (Auth0) or "roles" (EntraID), if "permissions" field is missing.
      *
      * @param token The JWT
      * @param requiredClaim The claim to authorise.
-     * @param permissionsField The field to extract claims from. Defaults to "permissions".
      */
     @JvmStatic
-    fun authorise(token: DecodedJWT, requiredClaim: String, permissionsField: String = "permissions"): AuthResponse {
-        val permissions = token.getClaim(permissionsField).asList(String::class.java).toHashSet()
-        if (requiredClaim in permissions)
-            return AuthResponse(StatusCode.OK)
-        return AuthResponse(StatusCode.UNAUTHENTICATED, "Token was missing required claim $requiredClaim")
+    fun authorise(token: DecodedJWT, requiredClaim: String): AuthResponse {
+        return authorise(token, setOf(requiredClaim))
     }
 
     /**
      * Authorise a JWT.
-     * This function will check that a JWT has all the [requiredClaims]. Claims will be extracted from the given [permissionsField].
+     * This function will check that a JWT has all the [requiredClaims]. The claims will be extracted from "permissions" (Auth0) or "roles" (EntraID), if "permissions" field is missing.
      *
      * @param token The JWT
      * @param requiredClaims The claims to authorise. If empty all tokens will be authorised.
-     * @param permissionsField The field to extract claims from. Defaults to "permissions".
      */
     @JvmStatic
-    fun authorise(token: DecodedJWT, requiredClaims: Set<String>, permissionsField: String = "permissions"): AuthResponse {
+    fun authorise(token: DecodedJWT, requiredClaims: Set<String>): AuthResponse {
         if (requiredClaims.isEmpty())
             return AuthResponse(StatusCode.OK)
-        val permissions = token.getClaim(permissionsField).asList(String::class.java).toHashSet()
+        val permissions = run {
+            token.getClaim("permissions").asList(String::class.java) ?: token.getClaim("roles").asList(String::class.java) ?: emptyList()
+        }.toHashSet()
         if (permissions.intersect(requiredClaims).size == requiredClaims.size)
             return AuthResponse(StatusCode.OK)
         return AuthResponse(

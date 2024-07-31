@@ -2,9 +2,15 @@
 ## [0.11.0] - UNRELEASED
 ### Breaking Changes
 * Helper functions in ZepbenTokenFetcher now require specifying the AuthMethod.
+* `JWTAuthoriser.authorise` no longer accepts a permissions claims field, instead it will attempt to retrieve claims from the "permissions" field if it exists in the token, or the "roles" field if the "permissions" field doesn't exist.
+* `JWTAuthenticator` has a new signature to accept a list of trusted domains rather than a single domain, and a `JWTMultiIssuerVerifierBuilder` rather than a `UrlJwkProvider`.
+* `Auth0AuthHandler` has a new signature and no longer accepts a `permissionsField` to pass onto `JWTAuthoriser.authorise`. (See above change to `JWTAuthoriser.authorise`)
+* `AuthRoute.routeFactory` has a new signature. Now accepts a list of `TrustedIssuer`'s in place of a `urlJwkProvider` and `issuer`.
 
 ### New Features
-* None.
+* `JWTAuthenticator` now supports authenticating tokens from multiple different issues via the use of `JWTMultiIssuerVerifierBuilder`.
+* `JWTMultiIssuerVerifierBuilder` will create a JWTVerifier based on the `iss` (issuer) of the token provided to `getVerifier()`. The returned JWTVerifier will
+  also validate that the audience claim matches the `requiredAudience` supplied to the `JWTMultiIssuerVerifierBuilder`.
 
 ### Enhancements
 * None.

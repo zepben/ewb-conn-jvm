@@ -51,18 +51,16 @@ data class GrpcAuthResp(val status: Status, val token: DecodedJWT? = null)
  * @property tokenAuthenticator The [TokenAuthenticator] to use for authenticating tokens.
  * @param requiredScopes A map of gRPC descriptors to their corresponding required scopes. If an empty set of scopes is provided, no authorisation
  * is necessary for the provided descriptor.
- * @param permissionsKey The key to use when looking up claims in the token.
  * @property authorise Callback to authorise a taken. Will be provided with the gRPC service name as per [serverCall.methodDescriptor.serviceName] and the JWT.
- * Must return a [GrpcAuthResp] with a valid status. By default will use [requiredScopes] and [permissionsKey] to determine authorisation.
+ * Must return a [GrpcAuthResp] with a valid status. By default will use [requiredScopes] and "permissions" (Auth0) or "roles" (EntraID) to determine authorisation.
  * If using the default implementation [requiredScopes] must not be null, and it must contain a valid claim for every possible gRPC serviceName.
  */
 class AuthInterceptor(
     private val tokenAuthenticator: TokenAuthenticator,
     requiredScopes: Map<String, String>?,
-    permissionsKey: String = "permissions",
     private val authorise: (String, DecodedJWT) -> GrpcAuthResp = { serviceName, token ->
         requiredScopes!![serviceName]?.let { claim ->
-            authRespToGrpcAuthResp(JWTAuthoriser.authorise(token, claim, permissionsKey))
+            authRespToGrpcAuthResp(JWTAuthoriser.authorise(token, claim))
         }
             ?: GrpcAuthResp(Status.UNAUTHENTICATED.withDescription("Server has not defined a permission scope for ${serviceName}. This is a bug, contact the developers."))
     }
