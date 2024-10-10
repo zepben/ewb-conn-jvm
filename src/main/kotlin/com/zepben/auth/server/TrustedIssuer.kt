@@ -9,8 +9,16 @@
 package com.zepben.auth.server
 
 import com.zepben.auth.client.ProviderDetails
+import com.zepben.auth.client.fetchProviderDetails
 
 data class TrustedIssuer(
     val issuerDomain: String,
-    val providerDetails: ProviderDetails
-)
+    private val providerDetailsProvider: (String) -> ProviderDetails = { fetchProviderDetails(issuerDomain) }
+) {
+
+    constructor(issuerDomain: String, providerDetails: ProviderDetails) : this(issuerDomain, { _ -> providerDetails } )
+
+    val providerDetails: ProviderDetails by lazy {
+        providerDetailsProvider(issuerDomain)
+    }
+}
