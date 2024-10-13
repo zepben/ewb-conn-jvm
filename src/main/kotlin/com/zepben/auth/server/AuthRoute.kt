@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Zeppelin Bend Pty Ltd
+ * Copyright 2024 Zeppelin Bend Pty Ltd
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -9,7 +9,6 @@
 
 package com.zepben.auth.server
 
-import com.auth0.jwk.UrlJwkProvider
 import com.zepben.auth.server.vertx.JWTAuthProvider
 import com.zepben.vertxutils.routing.Route
 import com.zepben.vertxutils.routing.RouteVersion
