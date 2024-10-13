@@ -11,6 +11,7 @@
 * `JWTAuthenticator` now supports authenticating tokens from multiple different issues via the use of `JWTMultiIssuerVerifierBuilder`.
 * `JWTMultiIssuerVerifierBuilder` will create a JWTVerifier based on the `iss` (issuer) of the token provided to `getVerifier()`. The returned JWTVerifier will
   also validate that the audience claim matches the `requiredAudience` supplied to the `JWTMultiIssuerVerifierBuilder`.
+* `TrustedIssuer` now supports lazy fetching of `TrustedIssuer.providerDetails` by accepting a lambda that takes an issuer domain and returns a `ProviderDetails`. 
 
 ### Enhancements
 * None.
