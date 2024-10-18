@@ -1,5 +1,5 @@
 # Evolve SDK connection library
-## [0.11.0] - UNRELEASED
+## [0.11.0] - 2024-10-18
 ### Breaking Changes
 * Helper functions in ZepbenTokenFetcher now require specifying the AuthMethod.
 * `JWTAuthoriser.authorise` no longer accepts a permissions claims field, instead it will attempt to retrieve claims from the "permissions" field if it exists in the token, or the "roles" field if the "permissions" field doesn't exist.
