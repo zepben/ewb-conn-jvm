@@ -19,6 +19,15 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 
+/**
+ * This class exists to allow us to configure the HTTP client used when fetching Jwks keys.
+ *
+ * There are cases in both local dev and customer environments where we need to fetch keys from endpoints that are signed by self-signed certificates.
+ * Unfortunately, the [com.auth0.jwk.UrlJwkProvider] does not provide a way to patch the underlying client.
+ *
+ * This code looks very Kotlin and is sourced from that class. This is because in order to convert the Jwks response into the [Jwk] object, we need to use
+ * the [Jwk.fromValues] function. This function requires a Map<String, Object> to work, so the logic from the Auth0 implementation was used.
+ */
 class ConfigurableJwkProvider(
     private val url: URL,
     verifyCertificates: Boolean,
@@ -49,6 +58,7 @@ class ConfigurableJwkProvider(
         val reader = ObjectMapper().readerFor(MutableMap::class.java)
         val thing = reader.readValue<Map<String, Any>>(response.body())
 
+        @Suppress("UNCHECKED_CAST")
         val keys = thing["keys"] as List<Map<String, Any>>
 
         return keys.map { Jwk.fromValues(it) }
