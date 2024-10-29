@@ -19,7 +19,8 @@ fun trustedIssuerUrlJwkProvider(
 ) = urlJwkProviderProvider(URI(issuer.providerDetails.jwkUrl).toURL()).allKeys.associateBy { it.id }
 
 class JWKHolder(
-    private val jwkProvider: (TrustedIssuer) -> Map<String, Jwk> = { issuer -> trustedIssuerUrlJwkProvider(issuer) }
+    private val verifyCertificates: Boolean,
+    private val jwkProvider: (TrustedIssuer) -> Map<String, Jwk> = { issuer -> trustedIssuerUrlJwkProvider(issuer, verifyCertificates) }
 ) {
     private var keys: MutableMap<String, Map<String, Jwk>> = mutableMapOf()
 
