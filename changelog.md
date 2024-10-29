@@ -7,7 +7,7 @@
 * None.
 
 ### Enhancements
-* None.
+* Replace use of the Auth0 `UrlJwkProvider` with our own `ConfigurableJwkProvider` so that we can customize the certificate verification behavior
 
 ### Fixes
 * None.
