@@ -8,16 +8,15 @@
 
 package com.zepben.auth.server
 
-import com.auth0.jwk.Jwk
-import com.auth0.jwk.JwkException
-import com.auth0.jwk.UrlJwkProvider
+import com.auth0.jwk.*
 import java.net.URI
 import java.net.URL
 
 fun trustedIssuerUrlJwkProvider(
     issuer: TrustedIssuer,
-    urlJwkProviderProvider: (URL) -> UrlJwkProvider = { url -> UrlJwkProvider(url) }
-) = urlJwkProviderProvider(URI(issuer.providerDetails.jwkUrl).toURL()).all.associateBy { it.id }
+    verifyCertificates: Boolean = true,
+    urlJwkProviderProvider: (URL) -> ConfigurableJwkProvider = { url -> ConfigurableJwkProvider(url, verifyCertificates) }
+) = urlJwkProviderProvider(URI(issuer.providerDetails.jwkUrl).toURL()).allKeys.associateBy { it.id }
 
 class JWKHolder(
     private val jwkProvider: (TrustedIssuer) -> Map<String, Jwk> = { issuer -> trustedIssuerUrlJwkProvider(issuer) }
@@ -30,3 +29,4 @@ class JWKHolder(
             keys[issuer.issuerDomain]?.get(kid) ?: throw JwkException("Unable to find key $kid in jwk endpoint. Check your JWK URL.")
         }
 }
+

@@ -10,7 +10,6 @@ package com.zepben.auth.server
 
 import com.auth0.jwk.Jwk
 import com.auth0.jwk.JwkException
-import com.auth0.jwk.UrlJwkProvider
 import com.zepben.auth.client.ProviderDetails
 import com.zepben.testutils.exception.ExpectException
 import io.mockk.every
@@ -161,13 +160,13 @@ class JWKHolderTest {
         )
 
         val returnedKeys = listOf(key1, key2, key3, key4, key5, key6)
-        val mockJwkProvider = mockk<UrlJwkProvider> {
-            every { all } returns returnedKeys
+        val mockJwkProvider = mockk<ConfigurableJwkProvider> {
+            every { allKeys } returns returnedKeys
         }
 
         val keysUrl = URI(keysUrlRaw).toURL()
 
-        val mockUrlJwkProviderProvider = mockk<(URL) -> UrlJwkProvider> {
+        val mockUrlJwkProviderProvider = mockk<(URL) -> ConfigurableJwkProvider> {
             every { this@mockk(keysUrl) } returns mockJwkProvider
         }
 
@@ -177,7 +176,7 @@ class JWKHolderTest {
             issuer.providerDetails
             providerDetails.jwkUrl
             mockUrlJwkProviderProvider.invoke(keysUrl)
-            mockJwkProvider.all
+            mockJwkProvider.allKeys
         }
     }
 }
