@@ -1,7 +1,7 @@
 # Evolve SDK connection library
 ## [0.12.0] - UNRELEASED
 ### Breaking Changes
-* None.
+* Update `fetchProviderDetails` to allow downstream users to set certificate verification. In addition, the default is changed for trust all certificates to using the default system store
 
 ### New Features
 * None.
@@ -10,7 +10,7 @@
 * Replace use of the Auth0 `UrlJwkProvider` with our own `ConfigurableJwkProvider` so that we can customize the certificate verification behavior
 
 ### Fixes
-* None.
+* None
 
 ### Notes
 * None.

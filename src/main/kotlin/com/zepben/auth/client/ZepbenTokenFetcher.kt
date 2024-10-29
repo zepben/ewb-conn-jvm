@@ -232,7 +232,7 @@ fun createTokenFetcher(
         authMethod = authMethod,
         issuer = issuer,
         audience = audience,
-        providerDetails = fetchProviderDetails(issuer = issuer, client = client)
+        providerDetails = fetchProviderDetails(issuer = issuer, httpClientCreator = { client })
     )
 
     return ZepbenTokenFetcher(
@@ -262,7 +262,7 @@ fun createTokenFetcher(
     issuerField: String = "issuer",
 ): ZepbenTokenFetcher {
     val config = createProviderConfig(
-        client = confClient,
+        httpClientCreator = { confClient },
         confAddress = confAddress,
         audienceField = audienceField,
         issuerField = issuerField,

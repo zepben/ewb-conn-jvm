@@ -36,18 +36,26 @@ data class AuthProviderConfig(
  * Helper method to fetch the provider-related auth configuration
  *
  * @param issuer Location to retrieve the configuration from. Must be a HTTP address that returns a JSON response.
- * @param client HTTP client used to retrieve the provider configuration.
+ * @param verifyCertificates If server certificates should be verified or not
+ * @param httpClientCreator A function that returns a configured [HttpClient]
  * @param handler an HTTP handler used to handle the HTTP response.
  *
  * @returns: A `ProviderDetails` if successfully contacted the issuer, error otherwise
  */
 fun fetchProviderDetails(
     issuer: String,
-    client: HttpClient = HttpClient.newBuilder().sslContext(SSLContextUtils.allTrustingSSLContext()).build(),
+    verifyCertificates: Boolean = true,
+    httpClientCreator: () -> HttpClient = {
+        if (!verifyCertificates) {
+            HttpClient.newBuilder().sslContext(SSLContextUtils.allTrustingSSLContext()).build()
+        } else {
+            HttpClient.newBuilder().build()
+        }
+    },
     handler: HttpResponse.BodyHandler<String> = HttpResponse.BodyHandlers.ofString()
 ): ProviderDetails {
     val issuerURL = "${issuer.trimEnd('/')}/.well-known/openid-configuration"
-    val response: HttpResponse<String> = client.send(HttpRequest.newBuilder().uri(URI(issuerURL)).GET().build(), handler)
+    val response: HttpResponse<String> = httpClientCreator().send(HttpRequest.newBuilder().uri(URI(issuerURL)).GET().build(), handler)
     if (response.statusCode() == StatusCode.OK.code) {
         try {
             val authConfigJson = Json.decodeValue(response.body()) as JsonObject
@@ -79,7 +87,8 @@ fun fetchProviderDetails(
  * Helper method to fetch auth related configuration from `confAddress` and create a `ZepbenTokenFetcher`.
  *
  * @param confAddress Location to retrieve authentication configuration from. Must be a HTTP address that returns a JSON response.
- * @param client HTTP client used to retrieve the authentication configuration.
+ * @param httpClientCreator A function that returns a configured [HttpClient]
+ * @param verifyCertificates If server certificates should be verified or not
  * @param handler an HTTP handler used to handle the HTTP response.
  * @param audienceField The field name to look up in the JSON response from the confAddress for `audience`.
  * @param issuerField The field name to look up in the JSON response from the confAddress for `issuer`.
@@ -88,7 +97,14 @@ fun fetchProviderDetails(
  */
 fun createProviderConfig(
     confAddress: String,
-    client: HttpClient = HttpClient.newBuilder().sslContext(SSLContextUtils.allTrustingSSLContext()).build(),
+    verifyCertificates: Boolean = true,
+    httpClientCreator: () -> HttpClient = {
+        if (!verifyCertificates) {
+            HttpClient.newBuilder().sslContext(SSLContextUtils.allTrustingSSLContext()).build()
+        } else {
+            HttpClient.newBuilder().build()
+        }
+    },
     handler: HttpResponse.BodyHandler<String> = HttpResponse.BodyHandlers.ofString(),
     authTypeField: String = "authType",
     audienceField: String = "audience",
@@ -98,7 +114,7 @@ fun createProviderConfig(
     // Fetch the auth data from EWB
     val response = try {
         // Try with https first
-        client.send(HttpRequest.newBuilder().uri(URI(confAddress)).GET().build(), handler)
+        httpClientCreator().send(HttpRequest.newBuilder().uri(URI(confAddress)).GET().build(), handler)
     } catch (e: IOException) {
         throw AuthException(1, "Fetching auth configuration from $confAddress failed, check you've provided the full URL with correct protocol")
     }
@@ -121,7 +137,7 @@ fun createProviderConfig(
                     authMethod = authMethod,
                     issuer = issuer,
                     audience = authConfigJson.getString(audienceField, ""),
-                    providerDetails = fetchProviderDetails(issuer, client, handler)
+                    providerDetails = fetchProviderDetails(issuer, verifyCertificates, httpClientCreator, handler)
                 )
             } catch (e: DecodeException) {
                 throw AuthException(
