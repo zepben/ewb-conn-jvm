@@ -42,7 +42,7 @@ class JWKHolderTest {
         every { it(trustedIssuerTwo) } returns mapOf("common_key_id" to jwkCommonTwo)
     }
 
-    private val holderUnderTest = JWKHolder(jwkProvider)
+    private val holderUnderTest = JWKHolder(true, jwkProvider)
 
     @Test
     fun `JWKHolder refreshes keys from issuer if kid not found in cache`() {

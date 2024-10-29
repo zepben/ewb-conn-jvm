@@ -43,7 +43,8 @@ class JWTMultiIssuerVerifierBuilderTest {
         val underTest = JWTMultiIssuerVerifierBuilder(
             requiredAudience = "aud",
             trustedIssuers = trustedIssuers,
-            jwkHolder = jwkHolder
+            jwkHolder = jwkHolder,
+            verifyCertificates = true
         )
 
         val token = mockk<DecodedJWT> {
@@ -68,7 +69,8 @@ class JWTMultiIssuerVerifierBuilderTest {
         val underTest = JWTMultiIssuerVerifierBuilder(
             requiredAudience = "aud",
             trustedIssuers = trustedIssuers,
-            jwkHolder = jwkHolder
+            jwkHolder = jwkHolder,
+            verifyCertificates = true
         )
 
         val token = mockk<DecodedJWT> {
@@ -93,7 +95,8 @@ class JWTMultiIssuerVerifierBuilderTest {
         val underTest = JWTMultiIssuerVerifierBuilder(
             requiredAudience = "aud",
             trustedIssuers = emptyList(),
-            jwkHolder = jwkHolder
+            jwkHolder = jwkHolder,
+            verifyCertificates = true
         )
 
         val token = mockk<DecodedJWT> {
@@ -114,7 +117,8 @@ class JWTMultiIssuerVerifierBuilderTest {
         val underTest = JWTMultiIssuerVerifierBuilder(
             requiredAudience = "aud",
             trustedIssuers = trustedIssuers,
-            jwkHolder = jwkHolder
+            jwkHolder = jwkHolder,
+            verifyCertificates = true
         )
 
         val token = mockk<DecodedJWT> {

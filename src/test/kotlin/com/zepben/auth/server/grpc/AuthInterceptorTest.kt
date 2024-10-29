@@ -31,9 +31,10 @@ class AuthInterceptorTest {
     fun testIntercept() {
         val ta = JWTAuthenticator("https://fake-aud/", listOf(TrustedIssuer("https://issuer/", ProviderDetails("dunno", "https://whereileftmy/keys/"))),
             verifierBuilder = JWTMultiIssuerVerifierBuilder(
-            "https://fake-aud/",
-            listOf(TrustedIssuer("https://issuer/", ProviderDetails("dunno", "https://whereileft.my/keys/"))),
-                JWKHolder { _ -> MockJwksUrlProvider().all.associateBy { it.id } } ))
+                "https://fake-aud/",
+                listOf(TrustedIssuer("https://issuer/", ProviderDetails("dunno", "https://whereileft.my/keys/"))),
+                verifyCertificates = true,
+                JWKHolder(true) { _ -> MockJwksUrlProvider().all.associateBy { it.id } } ))
         val requiredScopes = mapOf(
             "zepben.protobuf.np.NetworkProducer" to write_network_scope
         )
@@ -74,11 +75,14 @@ class AuthInterceptorTest {
 
     @Test
     fun `test provided authorise function is used`() {
-        val ta = JWTAuthenticator("https://fake-aud/", listOf(TrustedIssuer("https://issuer/", ProviderDetails("dunno", "https://whereileftmy/keys/"))),
-            verifierBuilder = JWTMultiIssuerVerifierBuilder(
+        val ta = JWTAuthenticator(
             "https://fake-aud/",
-            listOf(TrustedIssuer("https://issuer/", ProviderDetails("dunno", "https://whereileft.my/keys/"))),
-                JWKHolder { _ -> MockJwksUrlProvider().all.associateBy { it.id } } ))
+            listOf(TrustedIssuer("https://issuer/", ProviderDetails("dunno", "https://whereileftmy/keys/"))),
+            verifierBuilder = JWTMultiIssuerVerifierBuilder(
+                "https://fake-aud/",
+                listOf(TrustedIssuer("https://issuer/", ProviderDetails("dunno", "https://whereileft.my/keys/"))),
+                verifyCertificates = true,
+                JWKHolder(true) { _ -> MockJwksUrlProvider().all.associateBy { it.id } } ))
         var authoriseCalled = false
         val mdWithBearer = Metadata().apply { put(AUTHORIZATION_METADATA_KEY, "Bearer $TOKEN") }
         val sc = MockServerCall<Int, Int>({ _, _ -> })

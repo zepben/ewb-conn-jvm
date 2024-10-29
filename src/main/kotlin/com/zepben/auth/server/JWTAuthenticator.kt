@@ -41,7 +41,12 @@ interface TokenAuthenticator {
 open class JWTAuthenticator(
     audience: String,
     trustedIssuers: List<TrustedIssuer>,
-    private val verifierBuilder: JWTMultiIssuerVerifierBuilder = JWTMultiIssuerVerifierBuilder(requiredAudience = audience, trustedIssuers = trustedIssuers)
+    verifyCertificates: Boolean = true,
+    private val verifierBuilder: JWTMultiIssuerVerifierBuilder = JWTMultiIssuerVerifierBuilder(
+        requiredAudience = audience,
+        trustedIssuers = trustedIssuers,
+        verifyCertificates = verifyCertificates
+    )
 ) : TokenAuthenticator {
 
     override fun authenticate(token: String?): AuthResponse =
