@@ -30,18 +30,21 @@ class AuthProviderConfigTest {
         every { send(any(), handler) } returns response
     }
 
+    val clientCreator = { client}
+    val verifyCertificates = true
+
     @Test
     fun `handles handles issuers with and without slashes`(){
         var issuer = "https://some-issuer/"
 
-        fetchProviderDetails(issuer, client, handler)
+        fetchProviderDetails(issuer, verifyCertificates, clientCreator, handler)
         verify {
             client.send(HttpRequest.newBuilder().uri(URI("https://some-issuer/.well-known/openid-configuration")).GET().build(), handler)
         }
 
         issuer = "https://some-issuer"
 
-        fetchProviderDetails(issuer, client, handler)
+        fetchProviderDetails(issuer, verifyCertificates, clientCreator, handler)
         verify {
             client.send(HttpRequest.newBuilder().uri(URI("https://some-issuer/.well-known/openid-configuration")).GET().build(), handler)
         }

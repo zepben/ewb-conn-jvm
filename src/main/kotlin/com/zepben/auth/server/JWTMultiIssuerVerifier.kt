@@ -19,7 +19,8 @@ import java.security.interfaces.RSAPublicKey
 class JWTMultiIssuerVerifierBuilder(
     private val requiredAudience: String,
     private val trustedIssuers: List<TrustedIssuer>,
-    internal val jwkHolder: JWKHolder = JWKHolder()
+    private val verifyCertificates: Boolean,
+    internal val jwkHolder: JWKHolder = JWKHolder(verifyCertificates)
 ) {
     fun getVerifier(token: DecodedJWT): JWTVerifier {
         val issuer = trustedIssuers.firstOrNull { it.issuerDomain == token.issuer }

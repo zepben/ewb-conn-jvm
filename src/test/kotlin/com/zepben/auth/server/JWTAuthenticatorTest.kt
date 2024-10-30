@@ -32,7 +32,8 @@ class JWTAuthenticatorTest {
             verifierBuilder = JWTMultiIssuerVerifierBuilder(
                 "https://fake-aud/",
                 listOf(TrustedIssuer("https://issuer/", ProviderDetails("dunno", "https://whereileft.my/keys/"))),
-                JWKHolder { _ -> MockJwksUrlProvider().all.associateBy { it.id } } ))
+                true,
+                JWKHolder(true) { _ -> MockJwksUrlProvider().all.associateBy { it.id } } ))
 
         var authResp = ta.authenticate(TOKEN)
         assertThat(authResp.statusCode, equalTo(StatusCode.OK))
@@ -64,7 +65,8 @@ class JWTAuthenticatorTest {
             verifierBuilder = JWTMultiIssuerVerifierBuilder(
                 "https://wrong-aud/",
                 listOf(TrustedIssuer("https://issuer/", ProviderDetails("dunno", "https://whereileft.my/keys/"))),
-                JWKHolder { _ -> MockJwksUrlProvider().all.associateBy { it.id } } ))
+                true,
+                JWKHolder(true) { _ -> MockJwksUrlProvider().all.associateBy { it.id } } ))
 
         authResp = ta.authenticate(TOKEN)
         assertThat(authResp.statusCode, equalTo(StatusCode.PERMISSION_DENIED))
@@ -75,7 +77,8 @@ class JWTAuthenticatorTest {
             verifierBuilder = JWTMultiIssuerVerifierBuilder(
                 "https://fake-aud/",
                 listOf(TrustedIssuer("wrong-issuer", ProviderDetails("dunno", "https://whereileft.my/keys/"))),
-                JWKHolder { _ -> MockJwksUrlProvider().all.associateBy { it.id } } ))
+                true,
+                JWKHolder(true) { _ -> MockJwksUrlProvider().all.associateBy { it.id } } ))
 
         authResp = ta.authenticate(TOKEN)
         assertThat(authResp.statusCode, equalTo(StatusCode.PERMISSION_DENIED))
@@ -90,8 +93,8 @@ class JWTAuthenticatorTest {
             every { all } returns listOf(jwk)
         }
 
-        val ta = JWTMultiIssuerVerifierBuilder("https://fake-aud/", listOf(TrustedIssuer("https://issuer/", ProviderDetails("dunno", "https://whereileftmy/keys/")))
-        , JWKHolder { _ -> mockJWK.all.associateBy { it.id } } )
+        val ta = JWTMultiIssuerVerifierBuilder("https://fake-aud/", listOf(TrustedIssuer("https://issuer/", ProviderDetails("dunno", "https://whereileftmy/keys/"))), true,
+            JWKHolder(true) { _ -> mockJWK.all.associateBy { it.id } } )
         assertThat(ta.jwkHolder.getKeyFromJwk("fakekid", TrustedIssuer("ignored_for_now", ProviderDetails("",""))), equalTo(jwk))
 
         expect {
