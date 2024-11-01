@@ -25,11 +25,12 @@ class AuthRoute {
          * Creates a route that has a handler implementing [io.vertx.ext.web.handler.AuthHandler] that supports
          * Auth0 JWTs using [JWTAuthProvider] and [JWTAuthenticator].
          *
-         * @param availableRoute The [AvailableRoute] for API version management.
          * @param path The path the [Route] should be built on
          * @param audience The audience required for JWT authentication
          * @param trustedIssuers The list of issuers trusted by the JWT authentication.
          * @param requiredClaims The claims required for the JWT for authorisation.
+         * @param isRegexPath If the path contains a regex
+         * @param verifyCertificates If the server certificates should be verified
          */
         @JvmOverloads
         @JvmStatic
@@ -39,6 +40,7 @@ class AuthRoute {
             trustedIssuers: List<TrustedIssuer>,
             requiredClaims: Iterable<String> = emptySet(),
             isRegexPath: Boolean = false,
+            verifyCertificates: Boolean = true
         ): (AvailableRoute) -> Route =
             { availableRoute ->
                 when (availableRoute) {
@@ -49,7 +51,7 @@ class AuthRoute {
                             .hasRegexPath(isRegexPath)
                             .addHandler(
                                 Auth0AuthHandler(
-                                    JWTAuthProvider(JWTAuthenticator(audience, trustedIssuers)),
+                                    JWTAuthProvider(JWTAuthenticator(audience, trustedIssuers, verifyCertificates)),
                                     mutableSetOf<String>().apply { addAll(requiredClaims) },
                                 )
                             )
