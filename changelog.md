@@ -1,4 +1,20 @@
 # Evolve SDK connection library
+## [0.13.0] - UNRELEASED
+### Breaking Changes
+* None.
+
+### New Features
+* None.
+
+### Enhancements
+* None.
+
+### Fixes
+* None.
+
+### Notes
+* None.
+
 ## [0.12.0] - 2025-01-21
 ### Breaking Changes
 * Update `fetchProviderDetails` to allow downstream users to set certificate verification. In addition, the default is changed for trust all certificates to using the default system store
