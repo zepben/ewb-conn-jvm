@@ -85,7 +85,7 @@ class AuthInterceptor(
             return Contexts.interceptCall(ctx, serverCall, metadata, serverCallHandler)
         }
         // XXXX: Maybe in the future we should have a callback to a logger here to log failed requests? Currently the client is the only one
-        //       that will see the any error messages upon connection.
+        //       that will see any error messages upon connection, and thus we rely on clients for reporting issues.
         serverCall.close(authResp.status, Metadata())
         return object : ServerCall.Listener<ReqT>() {} // no-op
     }
