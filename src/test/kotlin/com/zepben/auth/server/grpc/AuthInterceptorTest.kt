@@ -9,16 +9,15 @@
 package com.zepben.auth.server.grpc
 
 import com.zepben.auth.client.ProviderDetails
-import com.zepben.auth.server.JWKHolder
-import com.zepben.auth.server.JWTAuthenticator
-import com.zepben.auth.server.JWTMultiIssuerVerifierBuilder
-import com.zepben.auth.server.TrustedIssuer
+import com.zepben.auth.server.*
 import com.zepben.testutils.auth.MockJwksUrlProvider
 import com.zepben.testutils.auth.MockServerCall
 import com.zepben.testutils.auth.MockServerCallHandler
 import com.zepben.testutils.auth.TOKEN
 import io.grpc.Metadata
 import io.grpc.Status
+import io.mockk.every
+import io.mockk.mockk
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
@@ -29,12 +28,8 @@ class AuthInterceptorTest {
 
     @Test
     fun testIntercept() {
-        val ta = JWTAuthenticator("https://fake-aud/", listOf(TrustedIssuer("https://issuer/", ProviderDetails("dunno", "https://whereileftmy/keys/"))),
-            verifierBuilder = JWTMultiIssuerVerifierBuilder(
-                "https://fake-aud/",
-                listOf(TrustedIssuer("https://issuer/", ProviderDetails("dunno", "https://whereileft.my/keys/"))),
-                verifyCertificates = true,
-                JWKHolder(true) { _ -> MockJwksUrlProvider().all.associateBy { it.id } } ))
+        val ta = createAuthenticator("https://fake-aud/", "https://issuer/")
+
         val requiredScopes = mapOf(
             "zepben.protobuf.np.NetworkProducer" to write_network_scope
         )
@@ -75,14 +70,8 @@ class AuthInterceptorTest {
 
     @Test
     fun `test provided authorise function is used`() {
-        val ta = JWTAuthenticator(
-            "https://fake-aud/",
-            listOf(TrustedIssuer("https://issuer/", ProviderDetails("dunno", "https://whereileftmy/keys/"))),
-            verifierBuilder = JWTMultiIssuerVerifierBuilder(
-                "https://fake-aud/",
-                listOf(TrustedIssuer("https://issuer/", ProviderDetails("dunno", "https://whereileft.my/keys/"))),
-                verifyCertificates = true,
-                JWKHolder(true) { _ -> MockJwksUrlProvider().all.associateBy { it.id } } ))
+        val ta = createAuthenticator("https://fake-aud/", "https://issuer/")
+
         var authoriseCalled = false
         val mdWithBearer = Metadata().apply { put(AUTHORIZATION_METADATA_KEY, "Bearer $TOKEN") }
         val sc = MockServerCall<Int, Int>({ _, _ -> })
@@ -100,5 +89,31 @@ class AuthInterceptorTest {
         authInterceptor.interceptCall(sc, mdWithBearer, sch)
         assertThat("Call was not made to the authenticator.", callWasMade)
         assertThat("Call was not made to the authoriser.", authoriseCalled)
+    }
+
+    @Test
+    fun `test exception is handled`() {
+        val ta = mockk<JWTAuthenticator> {
+            every { authenticate(any() )} throws Exception("some message")
+        }
+
+        var authoriseCalled = false
+        val mdWithBearer = Metadata().apply { put(AUTHORIZATION_METADATA_KEY, "Bearer $TOKEN") }
+        val sc = MockServerCall<Int, Int>({ status, _ ->
+            assertThat(status!!.code, equalTo(Status.UNKNOWN.code))
+            assertThat(status.description, equalTo("some message"))
+        })
+        var callWasMade = false
+        val sch = MockServerCallHandler<Int, Int> { _, metadata ->
+            callWasMade = true
+        }
+        val authInterceptor = AuthInterceptor(ta, null) { _, _ ->
+            authoriseCalled = true
+            GrpcAuthResp(Status.OK)
+        }
+
+        authInterceptor.interceptCall(sc, mdWithBearer, sch)
+        assertThat("Call was made to the authenticator when it shouldn't have been.", !callWasMade)
+        assertThat("Call was made to the authoriser when it shouldn't have been.", !authoriseCalled)
     }
 }

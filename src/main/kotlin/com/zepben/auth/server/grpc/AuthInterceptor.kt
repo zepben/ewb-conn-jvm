@@ -69,11 +69,15 @@ class AuthInterceptor(
         } else if (!value.startsWith(BEARER_TYPE)) {
             GrpcAuthResp(Status.UNAUTHENTICATED.withDescription("Unknown authorization type"))
         } else {
-            val r = tokenAuthenticator.authenticate(value.substring(BEARER_TYPE.length).trim { it <= ' ' })
-            if (r.statusCode === StatusCode.OK)
-                authorise(serverCall.methodDescriptor.serviceName!!, r.token!!)
-            else
-                GrpcAuthResp(statusCodeToStatus(r.statusCode).withDescription(r.message).withCause(r.cause))
+            try {
+                val r = tokenAuthenticator.authenticate(value.substring(BEARER_TYPE.length).trim { it <= ' ' })
+                if (r.statusCode === StatusCode.OK)
+                    authorise(serverCall.methodDescriptor.serviceName!!, r.token!!)
+                else
+                    GrpcAuthResp(statusCodeToStatus(r.statusCode).withDescription(r.message).withCause(r.cause))
+            } catch (ex: Exception) {
+                GrpcAuthResp(statusCodeToStatus(StatusCode.UNKNOWN).withDescription(ex.message).withCause(ex))
+            }
         }
 
         if (authResp.status === Status.OK) {
