@@ -27,7 +27,7 @@ class JWKHolder(
     fun getKeyFromJwk(kid: String, issuer: TrustedIssuer): Jwk =
         keys[issuer.issuerDomain]?.get(kid)?: run {
             keys[issuer.issuerDomain] = jwkProvider(issuer)
-            keys[issuer.issuerDomain]?.get(kid) ?: throw JwkException("Unable to find key $kid in jwk endpoint. Check your JWK URL.")
+            keys[issuer.issuerDomain]?.get(kid) ?: throw SigningKeyNotFoundException("Unable to find key $kid in jwk endpoint. Check your JWK URL.", null)
         }
 }
 

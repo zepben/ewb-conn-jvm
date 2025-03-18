@@ -8,12 +8,14 @@
 
 package com.zepben.auth.server
 
+import com.auth0.jwk.JwkException
 import com.auth0.jwt.JWT
 import com.auth0.jwt.exceptions.*
 import com.auth0.jwt.interfaces.DecodedJWT
 import com.zepben.auth.common.AuthException
 import com.zepben.auth.common.StatusCode
 import io.vertx.ext.web.handler.HttpException
+import org.slf4j.LoggerFactory
 
 const val CONTENT_TYPE = "Content-Type"
 
@@ -49,6 +51,8 @@ open class JWTAuthenticator(
     )
 ) : TokenAuthenticator {
 
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     override fun authenticate(token: String?): AuthResponse =
         if (token.isNullOrEmpty()) {
             AuthResponse(StatusCode.UNAUTHENTICATED, "No token was provided")
@@ -71,8 +75,8 @@ open class JWTAuthenticator(
                 AuthResponse(StatusCode.PERMISSION_DENIED, claim.message, claim)
             } catch (i: IllegalArgumentException) {
                 AuthResponse(StatusCode.MALFORMED_TOKEN, i.message, i)
-            } catch (e: Exception) {
-                AuthResponse(StatusCode.UNKNOWN, e.message, e)
+            } catch (j: JwkException) {
+               AuthResponse(StatusCode.UNAUTHENTICATED, j.message, j)
             }
         }
 }

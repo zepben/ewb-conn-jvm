@@ -69,17 +69,23 @@ class AuthInterceptor(
         } else if (!value.startsWith(BEARER_TYPE)) {
             GrpcAuthResp(Status.UNAUTHENTICATED.withDescription("Unknown authorization type"))
         } else {
-            val r = tokenAuthenticator.authenticate(value.substring(BEARER_TYPE.length).trim { it <= ' ' })
-            if (r.statusCode === StatusCode.OK)
-                authorise(serverCall.methodDescriptor.serviceName!!, r.token!!)
-            else
-                GrpcAuthResp(statusCodeToStatus(r.statusCode).withDescription(r.message).withCause(r.cause))
+            try {
+                val r = tokenAuthenticator.authenticate(value.substring(BEARER_TYPE.length).trim { it <= ' ' })
+                if (r.statusCode === StatusCode.OK)
+                    authorise(serverCall.methodDescriptor.serviceName!!, r.token!!)
+                else
+                    GrpcAuthResp(statusCodeToStatus(r.statusCode).withDescription(r.message).withCause(r.cause))
+            } catch (ex: Exception) {
+                GrpcAuthResp(statusCodeToStatus(StatusCode.UNKNOWN).withDescription(ex.message).withCause(ex))
+            }
         }
 
         if (authResp.status === Status.OK) {
             val ctx: Context = Context.current()
             return Contexts.interceptCall(ctx, serverCall, metadata, serverCallHandler)
         }
+        // XXXX: Maybe in the future we should have a callback to a logger here to log failed requests? Currently the client is the only one
+        //       that will see any error messages upon connection, and thus we rely on clients for reporting issues.
         serverCall.close(authResp.status, Metadata())
         return object : ServerCall.Listener<ReqT>() {} // no-op
     }

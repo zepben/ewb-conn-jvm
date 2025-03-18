@@ -10,6 +10,7 @@ package com.zepben.auth.server
 
 import com.auth0.jwk.Jwk
 import com.auth0.jwk.JwkException
+import com.auth0.jwk.SigningKeyNotFoundException
 import com.zepben.auth.client.ProviderDetails
 import com.zepben.testutils.exception.ExpectException
 import io.mockk.every
@@ -98,7 +99,7 @@ class JWKHolderTest {
     fun `JWKHolder throws on unable to find after refreshing cache`() {
         ExpectException.expect {
             holderUnderTest.getKeyFromJwk("keyId_34", trustedIssuerOne)
-        }.toThrow<JwkException>().withMessage("Unable to find key keyId_34 in jwk endpoint. Check your JWK URL.")
+        }.toThrow<SigningKeyNotFoundException>().withMessage("Unable to find key keyId_34 in jwk endpoint. Check your JWK URL.")
 
         validateKeyRequest(trustedIssuerOne, jwkProvider, true)
     }
