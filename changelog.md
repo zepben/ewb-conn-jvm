@@ -10,7 +10,9 @@
 * None.
 
 ### Fixes
-* None.
+* JWTAuthenticator will now handle JwkExceptions and return 403 Unauthenticated responses.
+* JWTAuthenticator will now pass through unhandled exceptions to the caller rather than wrapping them in 500 errors.
+  Exceptions now need to be handled by the caller of `authenticate()`.
 
 ### Notes
 * None.
